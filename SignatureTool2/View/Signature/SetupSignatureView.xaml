@@ -1,0 +1,186 @@
+﻿<UserControl x:Class="SignatureTool2.View.Signature.SetupSignatureView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SignatureTool2.View.Signature">
+    <FrameworkElement.Resources>
+        <ResourceDictionary>
+            <Style x:Key="{x:Type ListBoxItem}" TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource StyleListBoxItem}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Grid>
+                                <Border Background="{TemplateBinding Background}" />
+                                <DockPanel Margin="{TemplateBinding Padding}">
+                                    <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" Text="{Binding CreateResult}" />
+                                    <TextBlock VerticalAlignment="Center" Margin="0,0,4,0" TextTrimming="CharacterEllipsis" Text="{Binding Name}" ToolTip="{Binding Name}" />
+                                </DockPanel>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#220000ff" />
+                                </Trigger>
+                                <Trigger Property="ListBoxItem.IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#660000ff" />
+                                </Trigger>
+                                <DataTrigger Value="false" Binding="{Binding IsSaved}">
+                                    <Setter Property="Foreground" Value="#FFFF0000" />
+                                </DataTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="StyleListBoxItemCompiler" TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource StyleListBoxItem}">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Height" Value="20" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Grid>
+                                <Border Background="{TemplateBinding Background}" />
+                                <TextBlock VerticalAlignment="Center" Margin="{TemplateBinding Padding}" Text="{Binding Name}" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#220000ff" />
+                                </Trigger>
+                                <Trigger Property="ListBoxItem.IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#660000ff" />
+                                </Trigger>
+                                <DataTrigger Value="false" Binding="{Binding IsSaved}">
+                                    <Setter Property="Foreground" Value="#FFFF0000" />
+                                </DataTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </FrameworkElement.Resources>
+    <Grid>
+        <Border Margin="10" BorderThickness="1" BorderBrush="#cccccc">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.3*" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="0.7*" />
+                </Grid.ColumnDefinitions>
+                <DockPanel Grid.Column="0">
+                    <Border DockPanel.Dock="Bottom" BorderThickness="0,1,1,0" BorderBrush="#cccccc">
+                        <Grid Margin="5">
+                            <FrameworkElement.Resources>
+                                <ResourceDictionary>
+                                    <Style x:Key="{x:Type Button}" TargetType="{x:Type Button}">
+                                        <Setter Property="Padding" Value="6,4" />
+                                    </Style>
+                                </ResourceDictionary>
+                            </FrameworkElement.Resources>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="新增" Command="{Binding AddCommand}" />
+                            <Button Grid.Column="2" Content="删除" Command="{Binding DeleteCommand}" />
+                            <Button Grid.Column="4" Content="生成" Command="{Binding SignCommand}" />
+                        </Grid>
+                    </Border>
+                    <ListBox Style="{StaticResource StyleListBox}" BorderThickness="0,0,1,0" SelectionMode="Extended" SelectedItem="{Binding SelectedSetup}" ItemsSource="{Binding DataList}" />
+                </DockPanel>
+                <DockPanel Grid.Column="2" Margin="0,4,10,0">
+                    <Grid DockPanel.Dock="Top" DataContext="{Binding SelectedSetup}">
+                        <FrameworkElement.Resources>
+                            <ResourceDictionary>
+                                <Style x:Key="{x:Type Button}" TargetType="{x:Type Button}">
+                                    <Setter Property="Content" Value="选择" />
+                                    <Setter Property="Padding" Value="4,2" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                </Style>
+                                <Style x:Key="T1" TargetType="{x:Type TextBlock}">
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="MinWidth" Value="112" />
+                                    <Setter Property="TextBlock.TextAlignment" Value="Right" />
+                                </Style>
+                                <Style x:Key="T2" TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Margin" Value="4,0" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                    <Setter Property="FrameworkElement.ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Mode=Self}}" />
+                                </Style>
+                                <Style x:Key="{x:Type DockPanel}" TargetType="{x:Type DockPanel}">
+                                    <Setter Property="Margin" Value="0,4" />
+                                </Style>
+                                <Style x:Key="{x:Type TextBox}" TargetType="{x:Type TextBox}">
+                                    <Setter Property="MinHeight" Value="24" />
+                                    <Setter Property="Padding" Value="4" />
+                                    <Setter Property="FontSize" Value="12" />
+                                </Style>
+                            </ResourceDictionary>
+                        </FrameworkElement.Resources>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <DockPanel Grid.Row="0" Grid.Column="0">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="配置名称：" />
+                            <TextBox Text="{Binding Name}" />
+                        </DockPanel>
+                        <DockPanel Grid.Row="0" Grid.Column="2">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="文件名称：" />
+                            <TextBox Text="{Binding SaveName}" />
+                        </DockPanel>
+                        <DockPanel Grid.Row="1" Grid.Column="0">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="安装包NSIS：" />
+                            <Button DockPanel.Dock="Right" CommandParameter="install" Command="{Binding SelectFileCommand}" />
+                            <TextBlock Style="{StaticResource T2}" Text="{Binding SetupNSISPath}" />
+                        </DockPanel>
+                        <DockPanel Grid.Row="1" Grid.Column="2">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="安装包图标：" />
+                            <Button DockPanel.Dock="Right" CommandParameter="installicon" Command="{Binding SelectFileCommand}" />
+                            <Image Width="20" Height="20" HorizontalAlignment="Left" Source="{Binding SetupIconPath}" />
+                        </DockPanel>
+                        <DockPanel Grid.Row="2" Grid.Column="0">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="卸载包NSIS：" />
+                            <Button DockPanel.Dock="Right" CommandParameter="uninstall" Command="{Binding SelectFileCommand}" />
+                            <TextBlock Style="{StaticResource T2}" Text="{Binding UninstallNSISPath}" />
+                        </DockPanel>
+                        <DockPanel Grid.Row="2" Grid.Column="2">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="卸载包图标：" />
+                            <Button DockPanel.Dock="Right" CommandParameter="uninstallicon" Command="{Binding SelectFileCommand}" />
+                            <Image Width="20" Height="20" HorizontalAlignment="Left" Source="{Binding UninstallIconPath}" />
+                        </DockPanel>
+                        <DockPanel Grid.Row="3" Grid.Column="0">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="卸载包保存路径：" />
+                            <Button DockPanel.Dock="Right" Command="{Binding SelectFolderCommand}" />
+                            <TextBlock Style="{StaticResource T2}" Text="{Binding UninstallEXESavePath}" />
+                        </DockPanel>
+                        <DockPanel Grid.Row="3" Grid.Column="2">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="编译器：" />
+                            <Button Name="ChooseCompiler" DockPanel.Dock="Right" Command="{Binding SelectCompilerCommand}" CommandParameter="{Binding}" />
+                            <TextBlock Style="{StaticResource T2}" Text="{Binding CompilerName}" />
+                        </DockPanel>
+                    </Grid>
+                    <Button DockPanel.Dock="Top" Content="保存" Margin="0,4,0,0" Padding="0,6" Command="{Binding SaveCommand}" />
+                    <TextBox Grid.Row="5" Grid.ColumnSpan="3" Margin="0,8,0,0" IsReadOnly="True" ScrollViewer.HorizontalScrollBarVisibility="Auto" Padding="0,2" ScrollViewer.VerticalScrollBarVisibility="Auto" Text="{Binding ErrorText}" />
+                </DockPanel>
+            </Grid>
+        </Border>
+        <Popup StaysOpen="False" AllowsTransparency="True" Placement="Bottom" IsOpen="{Binding IsOpenComplierPanel}" PlacementTarget="{Binding ElementName=ChooseCompiler}">
+            <Border Background="#FFFFFFFF">
+                <ListBox Style="{StaticResource StyleListBox}" SelectionMode="Single" ItemContainerStyle="{StaticResource StyleListBoxItemCompiler}" ItemsSource="{Binding CompilerList}" />
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

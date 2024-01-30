@@ -1,0 +1,110 @@
+﻿<UserControl x:Class="SignatureTool2.View.SignatureView" 
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             xmlns:local="clr-namespace:SignatureTool2.View"
+             d:DesignHeight="600" d:DesignWidth="600">
+    <FrameworkElement.Resources>
+        <ResourceDictionary>
+            <Style x:Key="StyleLBI" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Padding" Value="6,0" />
+                <Setter Property="Height" Value="26" />
+                <Setter Property="ListBoxItem.IsSelected" Value="{Binding IsSelected}" />
+                <Setter Property="Background" Value="#00FFFFFF" />
+                <Setter Property="Content" Value="{Binding SoftwareName}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Grid>
+                                <Border Background="{TemplateBinding Background}" />
+                                <TextBlock Text="{TemplateBinding Content}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" ToolTip="{TemplateBinding Content}" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#220000ff" />
+                                </Trigger>
+                                <Trigger Property="ListBoxItem.IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#660000ff" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="StyleLBIC" TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource StyleLBI}">
+                <Setter Property="Content" Value="{Binding FilePath}" />
+            </Style>
+        </ResourceDictionary>
+    </FrameworkElement.Resources>
+    <Grid>
+        <Border Margin="10" BorderThickness="1" BorderBrush="#cccccc">
+            <Grid IsEnabled="{Binding IsEnabled}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.3*" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="0.7*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <DockPanel Grid.Column="0" Grid.RowSpan="2">
+                    <Border DockPanel.Dock="Bottom" BorderBrush="#cccccc" BorderThickness="0,0,1,0">
+                        <Grid Margin="5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Padding="6,4" Content="新增" Command="{Binding AddCommand}" />
+                            <Button Grid.Column="2" Padding="6,4" Content="删除" Command="{Binding DeleteCommand}" />
+                            <Button Grid.Column="4" Padding="6,4" Content="签名" Command="{Binding SignCommand}" />
+                        </Grid>
+                    </Border>
+                    <ListBox Name="L1" Grid.Column="0" Style="{StaticResource StyleListBox}" BorderThickness="0 0 1 1" ItemContainerStyle="{StaticResource StyleLBI}" SelectionMode="Extended" SelectedIndex="0" ScrollViewer.CanContentScroll="False" ItemsSource="{Binding FileList}" SelectedItem="{Binding SelectedItem}" />
+                </DockPanel>
+                <StackPanel Grid.Column="2" Grid.Row="0" Grid.IsSharedSizeScope="True" Margin="0,10,10,0">
+                    <DockPanel>
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="名称：" VerticalAlignment="Center" />
+                        <TextBox Margin="10,0,10,0" MinHeight="24" Width="150" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.SoftwareName}" />
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="公司：" VerticalAlignment="Center" />
+                        <TextBox Margin="10,0,0,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.Company}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="源路径：" VerticalAlignment="Center" ToolTip="生成的Release目录的路径" />
+                        <Button DockPanel.Dock="Right" Content="选择" Padding="4,2" Command="{Binding SelectSourcePathCommand}" />
+                        <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.SourcePath}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="目标路径：" VerticalAlignment="Center" ToolTip="需要将Release目录中的文件拷贝到打包的文件夹的路径" />
+                        <Button DockPanel.Dock="Right" Content="选择" Padding="4,2" Command="{Binding SelectTargetPathCommand}" />
+                        <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.TargetPath}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="ExeName：" VerticalAlignment="Center" ToolTip="指定生成的主EXE名字" />
+                       <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.ExcutableName}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="BuildCMD：" VerticalAlignment="Center" ToolTip="Cmd 编译时的命令" />
+                        <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.BiuldArgument}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="ProductInfoPath：" VerticalAlignment="Center" ToolTip="releaseDate" />
+                        <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.ProductInfoPath}" />
+                    </DockPanel>
+                    <Button Margin="0,10,0,0" MinHeight="30" Content="保存配置" Padding="6,4" Command="{Binding SaveConfigCommand}" />
+                </StackPanel>
+                <TextBox Grid.Column="2" Grid.Row="2" Margin="0,10,10,0" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Focusable="False" Text="{Binding ErrorText}" />
+            </Grid>
+        </Border>
+        <Grid Visibility="{Binding LoadingVisibility}">
+            <Border Background="#FF000000" Opacity="0.5" />
+            <Button Padding="10,4" HorizontalAlignment="Center" VerticalAlignment="Bottom" Content="停止" Command="{Binding StopCommand}" />
+        </Grid>
+    </Grid>
+</UserControl>

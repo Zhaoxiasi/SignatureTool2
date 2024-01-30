@@ -1,0 +1,90 @@
+﻿<UserControl x:Class="SignatureTool2.View.SelectFileSignatureView" PreviewKeyDown="UserControl_PreviewKeyDown" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:local="clr-namespace:SignatureTool2.View">
+    <FrameworkElement.Resources>
+        <ResourceDictionary>
+            <Style x:Key="StyleLBI" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Padding" Value="6,0" />
+                <Setter Property="Height" Value="26" />
+                <Setter Property="ListBoxItem.IsSelected" Value="{Binding IsSelected}" />
+                <Setter Property="Background" Value="#00FFFFFF" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Grid>
+                                <Border Background="{TemplateBinding Background}" />
+                                <Grid Margin="6,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="80" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding FileName}" ToolTip="{Binding FilePath}" />
+                                    <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Text="{Binding SignStatus}" />
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#220000ff" />
+                                </Trigger>
+                                <Trigger Property="ListBoxItem.IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#660000ff" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </FrameworkElement.Resources>
+    <Grid>
+        <Border Margin="10" BorderThickness="1" BorderBrush="#cccccc">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Margin="0,10,0,0" HorizontalAlignment="Center">
+                    <TextBlock.Inlines>
+                        <Run Text="{Binding TotalCount}" />
+                        <Run Text="项" />
+                    </TextBlock.Inlines>
+                </TextBlock>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ListBox Grid.Row="0" Grid.Column="0" Style="{StaticResource StyleListBox}" BorderThickness="1" Margin="10,10,0,0" ItemContainerStyle="{StaticResource StyleLBI}" SelectionMode="Extended" ScrollViewer.CanContentScroll="False" AllowDrop="True" ItemsSource="{Binding FileList}" Drop="ListBox_Drop" KeyDown="ListBox_KeyDown">
+                        <FrameworkElement.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="签名" CommandParameter="signle" Command="{Binding SignCommand}" />
+                                <MenuItem Header="移除" CommandParameter="signle" Command="{Binding RemoveItemCommand}" />
+                            </ContextMenu>
+                        </FrameworkElement.ContextMenu>
+                    </ListBox>
+                    <TextBox Grid.Row="0" Grid.Column="1" Margin="10,10,10,0" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Focusable="False" Text="{Binding ErrorText}" />
+                    <WrapPanel Margin="0,0,0,5" Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Center">
+                        <FrameworkElement.Resources>
+                            <ResourceDictionary>
+                                <Style x:Key="{x:Type Button}" TargetType="{x:Type Button}">
+                                    <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Null}" />
+                                    <Setter Property="Padding" Value="6,4" />
+                                    <Setter Property="Margin" Value="5,0" />
+                                </Style>
+                            </ResourceDictionary>
+                        </FrameworkElement.Resources>
+                        <Button Content="选择文件夹" Command="{Binding ChoseFolderCommand}" />
+                        <Button Content="选择文件" Command="{Binding ChoseFileCommand}" />
+                        <Button Content="移除" CommandParameter="all" Command="{Binding RemoveItemCommand}" />
+                        <Button Content="签名" CommandParameter="all" Command="{Binding SignCommand}" />
+                    </WrapPanel>
+                </Grid>
+            </DockPanel>
+        </Border>
+        <Grid Visibility="{Binding LoadingVisibility}">
+            <Border Background="#FF000000" Opacity="0.5" />
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#FFFFFFFF" FontSize="30" Text="{Binding SignTip}" />
+            <Button Padding="10,4" HorizontalAlignment="Center" VerticalAlignment="Bottom" Content="停止" Command="{Binding StopCommand}" />
+        </Grid>
+    </Grid>
+</UserControl>
