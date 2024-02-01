@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Policy;
 using System.Threading;
+using System.Windows.Forms;
 using SignatureTool2.Utilites;
 using SignatureTool2.Utilites.Extensions;
 using SignatureTool2.Utilites.Sign;
@@ -207,6 +208,27 @@ namespace SignatureTool2.Utilites.Sign
             string output = process.StandardOutput.ReadToEnd();
 
             return output.Contains("Signing Certificate Chain:");
+        }
+
+        public static bool CheckKey(string company)
+        {
+            if (company.ToLower().Equals("gemoo"))
+            {
+                if (SafeNetTool.GemooIn)
+                {
+                    App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("Gemoo2022#"));
+                    return true;
+                }
+            }
+            else
+            {
+                if (SafeNetTool.iMobieIn)
+                {
+                    Clipboard.SetDataObject("cIn02x0WqfoJ{172");
+                    return true;
+                }
+            }
+            return false;
         }
     } 
 }

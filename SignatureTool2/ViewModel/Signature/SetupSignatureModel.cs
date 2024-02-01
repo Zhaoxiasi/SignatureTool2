@@ -226,6 +226,31 @@ namespace SignatureTool2.ViewModel.Signature
                 SetProperty(ref createResult, value, "CreateResult");
             }
         }
+        public bool IsGemoo
+        {
+            get
+            {
+                return isGemoo;
+            }
+            set
+            {
+                SetProperty(ref isGemoo, value, "IsGemoo");
+            }
+        }
+        private bool isGemoo = true;
+
+        public bool IsAny
+        {
+            get
+            {
+                return isAny;
+            }
+            set
+            {
+                SetProperty(ref isAny, value, "IsAny");
+            }
+        }
+        private bool isAny;
 
         public DelegateCommand<object> SelectFolderCommand { get; }
 

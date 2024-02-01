@@ -69,7 +69,7 @@ namespace SignatureTool2
                         else if (deviceinfo.EventType == Dapplo.Windows.Devices.Enums.DeviceChangeEvent.DeviceRemoveComplete)
                             SafeNetTool.iMobieIn = false;
                     }
-                    else if (deviceinfo.Device.DisplayName.Contains("6&485ee9e&0&01"))
+                    else if (deviceinfo.Device.DisplayName.Contains("6&35f002a8&1&01"))
                     {
                         //Gemoo
                         if (deviceinfo.EventType == Dapplo.Windows.Devices.Enums.DeviceChangeEvent.DeviceArrival)

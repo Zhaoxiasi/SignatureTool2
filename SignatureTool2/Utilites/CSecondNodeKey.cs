@@ -23,6 +23,7 @@ namespace SignatureTool2.Utilites
         CS_WPFSlnPath,
         CS_WPFOutputPath,
         C_VsBuilderPath,
-        C_WpfResourcePath
+        C_WpfResourcePath,
+        CS_CompanyIdx
     } 
 }

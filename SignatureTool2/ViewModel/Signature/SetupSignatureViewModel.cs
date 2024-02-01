@@ -137,6 +137,8 @@ namespace SignatureTool2.ViewModel.Signature
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_UninstallIconPath, data.UninstallIconPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_UninstallNSISPath, data.UninstallNSISPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_IsWpf, data.IsWpf.ToString());
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_CompanyIdx, data.IsGemoo? "0":"1");
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_IsWpf, data.IsWpf.ToString());
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFSlnPath, data.WpfSlnPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFOutputPath, data.WpfOutPutPath);
                 list.Add(dictionary);
@@ -258,6 +260,14 @@ namespace SignatureTool2.ViewModel.Signature
                 {
                     if (item.IsSelected)
                     {
+                        var company = item.IsGemoo ? "Gemoo" : "iMobie";
+                        if (!SignatureTool.CheckKey(company))
+                        {
+                            Trace.TraceWarning($"无法完成{item.Name}项，因为{company}的Key没有插入！");
+                            continue;
+                        }
+                        Trace.TraceWarning($"{item.Name}项Key密码已复制！");
+
                         item.CreateResult = "生成中...";
                         if (CreateUninstall(item))
                         {
@@ -416,9 +426,18 @@ namespace SignatureTool2.ViewModel.Signature
                         IsSaved = true
                     };
                     var IsWpf = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_IsWpf);
-                    if (bool.TryParse(IsWpf,out bool isWPf))
+                    if (bool.TryParse(IsWpf, out bool isWPf))
                     {
                         setupSignatureModel.IsWpf = isWPf;
+                    }
+                    var CompanyIdx = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_CompanyIdx);
+                    if(CompanyIdx == "0"){
+                        setupSignatureModel.IsGemoo = true;
+                        setupSignatureModel.IsAny= false;
+                    }else if(CompanyIdx == "1")
+                    {
+                        setupSignatureModel.IsAny = true;
+                        setupSignatureModel.IsGemoo = false;
                     }
                     setupSignatureModel.SelectCompilerCommand = new DelegateCommand<SetupSignatureModel>(OnSelectCompiler);
                     DataList.Add(setupSignatureModel);

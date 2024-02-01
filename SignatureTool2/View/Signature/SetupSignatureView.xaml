@@ -172,7 +172,12 @@
                             <Button Name="ChooseCompiler" DockPanel.Dock="Right" Command="{Binding SelectCompilerCommand}" CommandParameter="{Binding}" />
                             <TextBlock Style="{StaticResource T2}" Text="{Binding CompilerName}" />
                         </DockPanel>
-                        <CheckBox  x:Name="WPFCB" Grid.Row="4" IsChecked="{Binding IsWpf}" Grid.Column="0" Content="Wpf"/>
+                        <DockPanel  Grid.Row="4" Grid.ColumnSpan="3">
+
+                            <CheckBox  x:Name="WPFCB" IsChecked="{Binding IsWpf}" Grid.Column="0" Content="Wpf"/>
+                            <RadioButton  x:Name="Gemoo" Grid.Row="4" IsChecked="{Binding IsGemoo}" Grid.Column="0" Content="Gemoo" GroupName="Company"/>
+                            <RadioButton  x:Name="Any" Grid.Row="4" IsChecked="{Binding IsAny}" Grid.Column="0" Content="Any" GroupName="Company"/>
+                        </DockPanel>
                         <DockPanel Visibility="{Binding ElementName=WPFCB,Path=IsChecked,Converter={StaticResource ConverterBoolToVisibility}}" Grid.Row="5" Grid.Column="0">
                             <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="WPFSln路径：" />
                             <Button DockPanel.Dock="Right" CommandParameter="WPFsln" Command="{Binding SelectFileCommand}" />
