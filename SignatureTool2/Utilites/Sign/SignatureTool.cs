@@ -3,7 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing.Printing;
 using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Security.Policy;
 using System.Threading;
 using SignatureTool2.Utilites;
 using SignatureTool2.Utilites.Extensions;
@@ -46,6 +50,12 @@ namespace SignatureTool2.Utilites.Sign
                 {
                     semaphoreTool.SkipThread();
                     break;
+                }
+                if (GetIsSigned(file.FilePath))
+                {
+                    Interlocked.Increment(ref currentCount);
+                    Trace.TraceInformation($"<{sName}>:Has being Signed:{file.FilePath}");
+                    continue;
                 }
                 semaphoreTool.InvokeByTask(delegate (object par)
                 {
@@ -125,6 +135,8 @@ namespace SignatureTool2.Utilites.Sign
             List<SignModel> li = new List<SignModel>();
             files?.ForEach(delegate (string p)
             {
+                if (GetIsSigned(p))
+                    return;
                 SignModel item = new SignModel
                 {
                     FilePath = p
@@ -173,6 +185,28 @@ namespace SignatureTool2.Utilites.Sign
             {
                 return ex.Message;
             }
+        }
+
+        private static bool GetIsSigned(string filePath)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+            string text = "";
+            text = AppDomain.CurrentDomain.BaseDirectory.Combine("signtool.exe");
+            startInfo.FileName = "cmd.exe";
+            startInfo.Arguments = $"/c {text} verify  /v " + filePath;
+            startInfo.UseShellExecute = false;
+            startInfo.CreateNoWindow = true;
+
+            Process process = new Process();
+            process.StartInfo = startInfo;
+            process.EnableRaisingEvents = true;
+            process.Start();
+            process.WaitForExit();
+            string output = process.StandardOutput.ReadToEnd();
+
+            return output.Contains("Signing Certificate Chain:");
         }
     } 
 }

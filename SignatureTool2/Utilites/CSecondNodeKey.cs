@@ -18,6 +18,11 @@ namespace SignatureTool2.Utilites
         C_CompilerPath,
         C_CompilerIconSavePath,
         C_ReplaceIconName,
-        C_CommandParameter
+        C_CommandParameter,
+        CS_IsWpf,
+        CS_WPFSlnPath,
+        CS_WPFOutputPath,
+        C_VsBuilderPath,
+        C_WpfResourcePath
     } 
 }

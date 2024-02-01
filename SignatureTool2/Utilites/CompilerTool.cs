@@ -50,6 +50,8 @@ namespace SignatureTool2.Utilites
                     CompilerSettingModel item = new CompilerSettingModel
                     {
                         commandParameter = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.C_CommandParameter),
+                        vsBuilderPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.C_VsBuilderPath),
+                        wpfResourcePath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.C_WpfResourcePath),
                         compilerIconSavePath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.C_CompilerIconSavePath),
                         compilerID = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.C_CompilerID),
                         compilerPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.C_CompilerPath),
@@ -77,6 +79,8 @@ namespace SignatureTool2.Utilites
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.C_ReplaceIconName, item.replaceIconName);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.C_CompilerIconSavePath, item.compilerIconSavePath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.C_CommandParameter, item.commandParameter);
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.C_VsBuilderPath, item.vsBuilderPath);
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.C_WpfResourcePath, item.wpfResourcePath);
                 list.Add(dictionary);
             }
             ConfigTool.Instance.SetValueOfRoot(CRootKey.Compiler, list);
@@ -88,9 +92,10 @@ namespace SignatureTool2.Utilites
         {
             if (string.IsNullOrEmpty(compilerID))
             {
-                return null;
+                return settingList.FirstOrDefault();
             }
             return settingList.FirstOrDefault((CompilerSettingModel p) => p.compilerID == compilerID);
         }
+
     } 
 }

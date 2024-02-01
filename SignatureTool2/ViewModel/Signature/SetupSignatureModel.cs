@@ -2,7 +2,10 @@
 #define TRACE
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Management.Instrumentation;
 using System.Windows;
+using System.Windows.Forms;
 using Prism.Commands;
 using SignatureTool2;
 using SignatureTool2.Utilites;
@@ -33,7 +36,13 @@ namespace SignatureTool2.ViewModel.Signature
 
         private string compilerName;
 
+        private string wpfOutPutPath;
+
+        private string wpfSlnPath;
+
         private bool isSaved;
+
+        private bool isWpf;
 
         private bool isSelected;
 
@@ -148,6 +157,39 @@ namespace SignatureTool2.ViewModel.Signature
                 SetProperty(ref compilerName, value, "CompilerName");
             }
         }
+        public string WpfOutPutPath
+        {
+            get
+            {
+                return wpfOutPutPath;
+            }
+            set
+            {
+                SetProperty(ref wpfOutPutPath, value, "WpfOutPutPath");
+            }
+        }
+        public string WpfSlnPath
+        {
+            get
+            {
+                return wpfSlnPath;
+            }
+            set
+            {
+                SetProperty(ref wpfSlnPath, value, "WpfSlnPath");
+            }
+        }
+        public bool IsWpf
+        {
+            get
+            {
+                return isWpf;
+            }
+            set
+            {
+                SetProperty(ref isWpf, value, "IsWpf");
+            }
+        }
 
         public bool IsSaved
         {
@@ -221,6 +263,10 @@ namespace SignatureTool2.ViewModel.Signature
                     filter.Item1 = "卸载包图标";
                     filter.Item2 = "*.ico";
                     break;
+                case "WPFsln":
+                    filter.Item1 = "Sln工程文件";
+                    filter.Item2 = "*.Sln";
+                    break;
             }
             string value = ChooseDialogTool.OpenSelectFileDialog(filter, multiSelect: false);
             if (!value.IsNullOrEmpty())
@@ -239,6 +285,9 @@ namespace SignatureTool2.ViewModel.Signature
                     case "uninstallicon":
                         UninstallIconPath = value;
                         break;
+                    case "WPFsln":
+                        WpfSlnPath = value;
+                        break;
                 }
                 IsSaved = false;
             }
@@ -246,15 +295,35 @@ namespace SignatureTool2.ViewModel.Signature
 
         private void OnSelectFolder(object obj)
         {
-            string text = ChooseDialogTool.OpenSelectFolderDialog(UninstallEXESavePath);
+            string param = obj?.ToString();
+            string startPath = "";
+            switch (param)
+            {
+                case "WPFOutput":
+                    startPath = WpfOutPutPath;
+
+                    break;
+                default:
+                    startPath = UninstallEXESavePath;
+                    break;
+            }
+            string text = ChooseDialogTool.OpenSelectFolderDialog(startPath);
             if (!text.IsNullOrEmpty())
             {
-                if (text.Contains(" "))
+                switch (param)
                 {
-                    TipsTool.OpenTipsWindow("卸载包的保存路径不可以包含空格", "警告", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                    return;
+                    case "WPFOutput":
+                        WpfOutPutPath = text;
+                        break;
+                    default:
+                        if (text.Contains(" "))
+                        {
+                            TipsTool.OpenTipsWindow("卸载包的保存路径不可以包含空格", "警告", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                            return;
+                        }
+                        UninstallEXESavePath = text;
+                        break;
                 }
-                UninstallEXESavePath = text;
                 IsSaved = false;
             }
         }
@@ -262,6 +331,7 @@ namespace SignatureTool2.ViewModel.Signature
         internal bool VerifyWhileCreateUninstall()
         {
             CompilerSettingModel compilerByID = CompilerTool.Instance.GetCompilerByID(CompilerID);
+          
             if (compilerByID == null)
             {
                 WriteLog("未找到编译器<" + CompilerName + ">");
@@ -271,6 +341,35 @@ namespace SignatureTool2.ViewModel.Signature
             {
                 return false;
             }
+            if (isWpf)
+            {
+                WriteLog("拷贝Wpf EXE");
+                if (!WpfOutPutPath.IsExistsFolder())
+                {
+                    WriteLog("Exe<" + WpfOutPutPath + ">不存在");
+                    return false;
+                }
+                string installexePath = Path.Combine(WpfOutPutPath, "setup.exe");
+                string uninstallexePath = Path.Combine(WpfOutPutPath, "uninstall.exe");
+                string targetResPath = Path.Combine(compilerByID.wpfResourcePath, "setup.exe");
+                if (FileTool.CopyFile(installexePath, targetResPath, delegate (Exception error)
+                {
+                    WriteLog("拷贝失败：" + error.Message);
+                }) != 0)
+                {
+
+                }
+                targetResPath = Path.Combine(compilerByID.wpfResourcePath, "uninstall.exe");
+                if (FileTool.CopyFile(uninstallexePath, targetResPath, delegate (Exception error)
+                {
+                    WriteLog("拷贝失败：" + error.Message);
+                }) != 0)
+                {
+
+                }
+
+            }
+
             WriteLog("拷贝卸载包图标");
             if (!UninstallIconPath.IsExistsFile())
             {
@@ -319,6 +418,11 @@ namespace SignatureTool2.ViewModel.Signature
         private void WriteLog(string msg)
         {
             Trace.TraceWarning("<" + Name + "> -> " + msg);
+        }
+
+        internal string CreateBuildArg()
+        {
+            return $"/c devenv \"{WpfSlnPath}\" /build \"Release|AnyCPU\"";
         }
     } 
 }

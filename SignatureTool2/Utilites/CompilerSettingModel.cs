@@ -20,6 +20,10 @@ namespace SignatureTool2.Utilites
 
         public string commandParameter;
 
+        public string vsBuilderPath;
+
+        public string wpfResourcePath;
+
         public bool IsAvailable
         {
             get

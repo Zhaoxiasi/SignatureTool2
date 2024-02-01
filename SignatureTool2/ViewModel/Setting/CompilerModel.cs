@@ -21,6 +21,10 @@ namespace SignatureTool2.ViewModel.Setting
 
         private string commandParameter;
 
+        private string vsBuilderPath;
+
+        private string wpfResourcePath;
+
         private bool isSaved;
 
         private bool isSelected;
@@ -84,6 +88,28 @@ namespace SignatureTool2.ViewModel.Setting
             set
             {
                 SetProperty(ref commandParameter, value, "CommandParameter");
+            }
+        }
+        public string VsBuilderPath
+        {
+            get
+            {
+                return vsBuilderPath;
+            }
+            set
+            {
+                SetProperty(ref vsBuilderPath, value, "VsBuilderPath");
+            }
+        }
+        public string WpfResourcePath
+        {
+            get
+            {
+                return wpfResourcePath;
+            }
+            set
+            {
+                SetProperty(ref wpfResourcePath, value, "WpfResourcePath");
             }
         }
 

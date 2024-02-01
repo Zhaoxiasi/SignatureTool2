@@ -13,6 +13,7 @@ using Prism.Commands;
 using SignatureTool2;
 using SignatureTool2.Utilites;
 using SignatureTool2.Utilites.DialogWindow;
+using SignatureTool2.Utilites.Directorys;
 using SignatureTool2.Utilites.Extensions;
 using SignatureTool2.Utilites.Log;
 using SignatureTool2.Utilites.Sign;
@@ -135,6 +136,9 @@ namespace SignatureTool2.ViewModel.Signature
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_UninstallExeSaveFolderPath, data.UninstallEXESavePath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_UninstallIconPath, data.UninstallIconPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_UninstallNSISPath, data.UninstallNSISPath);
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_IsWpf, data.IsWpf.ToString());
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFSlnPath, data.WpfSlnPath);
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFOutputPath, data.WpfOutPutPath);
                 list.Add(dictionary);
                 data.IsSaved = true;
             }
@@ -195,6 +199,8 @@ namespace SignatureTool2.ViewModel.Signature
                 CompilerModel compilerModel = new CompilerModel
                 {
                     CommandParameter = compilerSetting.commandParameter,
+                    VsBuilderPath = compilerSetting.vsBuilderPath,
+                    WpfResourcePath = compilerSetting.wpfResourcePath,
                     CompilerIconSavePath = compilerSetting.compilerIconSavePath,
                     CompilerID = compilerSetting.compilerID,
                     CompilerPath = compilerSetting.compilerPath,
@@ -284,6 +290,14 @@ namespace SignatureTool2.ViewModel.Signature
         {
             bool flag = false;
             Trace.TraceInformation("---------------生成<" + model.Name + ">---------------");
+            if (model.IsWpf)
+            {
+                flag = CreateWPFInstallerAndUninstaller(model);
+            }
+            if (!flag)
+            {
+                return false;
+            }
             if (model.UninstallNSISPath.IsNullOrEmpty())
             {
                 Trace.TraceInformation("<" + model.Name + ">的卸载包NSIS路径为空，已跳过生成");
@@ -315,6 +329,38 @@ namespace SignatureTool2.ViewModel.Signature
             }
             Trace.TraceInformation("---------------生成<" + model.Name + ">结束---------------");
             return flag;
+        }
+
+        private bool CreateWPFInstallerAndUninstaller(SetupSignatureModel model)
+        {
+            FolderTool.DeleteFolder(model.WpfOutPutPath);
+
+            var compiler = CompilerTool.Instance.GetCompilerByID(model.CompilerID); 
+            SlnBuild.Build(model.CreateBuildArg(),Path.GetDirectoryName(compiler.vsBuilderPath.Trim('\"')));
+            string installexePath = Path.Combine(model.WpfOutPutPath, "setup.exe");
+            string uninstallexePath = Path.Combine(model.WpfOutPutPath, "uninstall.exe");
+            if (installexePath.IsExistsFile() && uninstallexePath.IsExistsFile())
+            {
+                List<string> list = new List<string>();
+                foreach (var file in Directory.GetFiles(model.WpfOutPutPath))
+                {
+                    if (file.EndsWith(".dll")|| file.EndsWith(".exe"))
+                    {
+                        list.Add(file);
+                    }
+                }
+                var smodel = SignatureTool.CreateSignModel(list);
+                var flag = new SignatureTool().SignatureFiles("wpf Installers", smodel);
+                return flag;
+            }
+            else
+            {
+                if (!installexePath.IsExistsFile())
+                    Trace.TraceInformation("<" + model.Name + ">的WPF安装包路径为空，已跳过生成");
+                else if (!uninstallexePath.IsExistsFile())
+                    Trace.TraceInformation("<" + model.Name + ">的WPF写在包路径为空，已跳过生成");
+            }
+            return false;
         }
 
         private bool CreateInstall(SetupSignatureModel model)
@@ -365,8 +411,15 @@ namespace SignatureTool2.ViewModel.Signature
                         UninstallEXESavePath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_UninstallExeSaveFolderPath),
                         UninstallIconPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_UninstallIconPath),
                         UninstallNSISPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_UninstallNSISPath),
+                        WpfSlnPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_WPFSlnPath),
+                        WpfOutPutPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_WPFOutputPath),
                         IsSaved = true
                     };
+                    var IsWpf = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_IsWpf);
+                    if (bool.TryParse(IsWpf,out bool isWPf))
+                    {
+                        setupSignatureModel.IsWpf = isWPf;
+                    }
                     setupSignatureModel.SelectCompilerCommand = new DelegateCommand<SetupSignatureModel>(OnSelectCompiler);
                     DataList.Add(setupSignatureModel);
                 }

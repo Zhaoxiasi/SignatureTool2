@@ -134,6 +134,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Converter\BoolToObjectConverter.cs" />
     <Compile Include="LogRecord.cs" />
     <Compile Include="MainWindowView.xaml.cs">
       <DependentUpon>MainWindowView.xaml</DependentUpon>
@@ -158,6 +159,7 @@
     <Compile Include="Utilites\Sign\SignatureTool.cs" />
     <Compile Include="Utilites\Sign\SignModel.cs" />
     <Compile Include="Utilites\Sign\SignResultEnum.cs" />
+    <Compile Include="Utilites\SlnBuild.cs" />
     <Compile Include="Utilites\Zip\Com7zHelper.cs" />
     <Compile Include="ViewModelBase.cs" />
     <Compile Include="ViewModel\CopyFileModel.cs" />
@@ -186,6 +188,10 @@
     <Compile Include="View\Signature\SetupSignatureView.xaml.cs">
       <DependentUpon>SetupSignatureView.xaml</DependentUpon>
     </Compile>
+    <Page Include="Converter\Converters.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="resource\CommonStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

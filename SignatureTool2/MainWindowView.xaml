@@ -37,5 +37,6 @@
     </FrameworkElement.Resources>
     <Grid>
         <TabControl ItemContainerStyle="{StaticResource StyleTable}" ItemsSource="{Binding Tables}" />
+        <Button Content="Setting" Name="SettingBtn" HorizontalAlignment="Right" VerticalAlignment="Top" Click="SettingBtn_Click" Command="{Binding OpenSettingCommand}" Margin=" 0 3 3 0"/>
     </Grid>
 </Window>

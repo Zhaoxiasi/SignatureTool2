@@ -98,6 +98,7 @@
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Grid.Column="0">
@@ -121,6 +122,14 @@
                     <DockPanel Grid.Row="4" Grid.Column="0">
                         <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="编译器命令行(?)：" ToolTip="使用占位符{0}、{1}、{3}来代表编译器路径、.nsi文件路径和生成路径" />
                         <TextBox Text="{Binding CommandParameter}" />
+                    </DockPanel>
+                    <DockPanel Grid.Row="5" Grid.Column="0">
+                        <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="Visual Studio路径(?)：" ToolTip="devenc.exe的路径" />
+                        <TextBox Text="{Binding VsBuilderPath}" />
+                    </DockPanel>
+                    <DockPanel Grid.Row="6" Grid.Column="0">
+                        <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="Wpf 资源路径(?)：" ToolTip="install.exe、uninstall.exe的路径" />
+                        <TextBox Text="{Binding WpfResourcePath}" />
                     </DockPanel>
                 </Grid>
                 <Button DockPanel.Dock="Top" Content="保存" Margin="0,4,0,0" Padding="0,6" Command="{Binding SaveCommand}" />

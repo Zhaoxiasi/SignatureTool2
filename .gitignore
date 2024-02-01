@@ -4,3 +4,4 @@ packages/
 debug/
 release/
 *.csproj.user
+.vs/

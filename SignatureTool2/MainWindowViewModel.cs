@@ -17,6 +17,7 @@ using System.Management;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SignatureTool2
@@ -466,6 +467,7 @@ namespace SignatureTool2
                         Initialize();
                         break;
                 }
+                Thread.Sleep(100);
             }
         }
 

@@ -83,6 +83,8 @@ namespace SignatureTool2.ViewModel.Setting
                 CompilerSettingModel item = new CompilerSettingModel
                 {
                     commandParameter = data.CommandParameter,
+                    vsBuilderPath = data.VsBuilderPath,
+                    wpfResourcePath = data.WpfResourcePath,
                     compilerIconSavePath = data.CompilerIconSavePath,
                     compilerID = data.CompilerID,
                     compilerPath = data.CompilerPath,
@@ -132,6 +134,8 @@ namespace SignatureTool2.ViewModel.Setting
                 CompilerModel item = new CompilerModel
                 {
                     CommandParameter = compilerSetting.commandParameter,
+                    VsBuilderPath = compilerSetting.vsBuilderPath,
+                    WpfResourcePath = compilerSetting.wpfResourcePath,
                     CompilerIconSavePath = compilerSetting.compilerIconSavePath,
                     CompilerID = compilerSetting.compilerID,
                     CompilerPath = compilerSetting.compilerPath,

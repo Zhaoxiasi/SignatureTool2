@@ -24,5 +24,9 @@ namespace SignatureTool2
             SignatureTool.IsAllSkip = true;
         }
 
+        private void SettingBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     } 
 }

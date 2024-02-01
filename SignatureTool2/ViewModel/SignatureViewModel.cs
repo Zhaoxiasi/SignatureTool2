@@ -412,7 +412,10 @@ namespace SignatureTool2.ViewModel
             bool result = false;
             if (model.checkNeedBuild())
             {
-                model.Build();
+
+                var compiler = CompilerTool.Instance.GetCompilerByID(null);
+                SlnBuild.Build(model.BiuldArgument, Path.GetDirectoryName(compiler.vsBuilderPath));
+                model.LastBiuldTime = DateTime.Now;
             }
             FindNeedCopyFile(model);
             if (CopyFileToTarget(model))
