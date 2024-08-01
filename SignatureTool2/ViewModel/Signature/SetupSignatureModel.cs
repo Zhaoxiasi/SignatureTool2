@@ -33,6 +33,7 @@ namespace SignatureTool2.ViewModel.Signature
         private string uninstallIconPath;
 
         private string uninstallEXESavePath;
+        private string wpfReouscePath;
 
         private string compilerName;
 
@@ -143,6 +144,18 @@ namespace SignatureTool2.ViewModel.Signature
             set
             {
                 SetProperty(ref uninstallEXESavePath, value, "UninstallEXESavePath");
+            }
+        }
+
+        public string WpfResourcePath
+        {
+            get
+            {
+                return wpfReouscePath;
+            }
+            set
+            {
+                SetProperty(ref wpfReouscePath, value, "WpfResourcePath");
             }
         }
 
@@ -328,6 +341,10 @@ namespace SignatureTool2.ViewModel.Signature
                     startPath = WpfOutPutPath;
 
                     break;
+                case "WPFResource":
+                    startPath = WpfResourcePath;
+
+                    break;
                 default:
                     startPath = UninstallEXESavePath;
                     break;
@@ -339,6 +356,10 @@ namespace SignatureTool2.ViewModel.Signature
                 {
                     case "WPFOutput":
                         WpfOutPutPath = text;
+                        break;
+                    case "WPFResource":
+                        WpfResourcePath = text;
+
                         break;
                     default:
                         if (text.Contains(" "))
@@ -376,7 +397,7 @@ namespace SignatureTool2.ViewModel.Signature
                 }
                 string installexePath = Path.Combine(WpfOutPutPath, "setup.exe");
                 string uninstallexePath = Path.Combine(WpfOutPutPath, "uninstall.exe");
-                string targetResPath = Path.Combine(compilerByID.wpfResourcePath, "setup.exe");
+                string targetResPath = Path.Combine(WpfResourcePath, "setup.exe");
                 if (FileTool.CopyFile(installexePath, targetResPath, delegate (Exception error)
                 {
                     WriteLog("拷贝失败：" + error.Message);
@@ -384,7 +405,7 @@ namespace SignatureTool2.ViewModel.Signature
                 {
 
                 }
-                targetResPath = Path.Combine(compilerByID.wpfResourcePath, "uninstall.exe");
+                targetResPath = Path.Combine(WpfResourcePath, "uninstall.exe");
                 if (FileTool.CopyFile(uninstallexePath, targetResPath, delegate (Exception error)
                 {
                     WriteLog("拷贝失败：" + error.Message);

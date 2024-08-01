@@ -5,6 +5,7 @@ namespace SignatureTool2.Utilites
     {
         Package_7z,
         Compiler_Setup,
-        Compiler
+        Compiler,
+        Protecter
     } 
 }

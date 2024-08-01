@@ -132,6 +132,7 @@
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <DockPanel Grid.Row="0" Grid.Column="0">
@@ -172,25 +173,30 @@
                             <Button Name="ChooseCompiler" DockPanel.Dock="Right" Command="{Binding SelectCompilerCommand}" CommandParameter="{Binding}" />
                             <TextBlock Style="{StaticResource T2}" Text="{Binding CompilerName}" />
                         </DockPanel>
-                        <DockPanel  Grid.Row="4" Grid.ColumnSpan="3">
+                        <DockPanel Grid.Row="4" Grid.Column="0">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="WPF资源路径：" />
+                            <Button DockPanel.Dock="Right" Command="{Binding SelectFolderCommand}"  CommandParameter="WPFResource"/>
+                            <TextBlock Style="{StaticResource T2}" Text="{Binding WpfResourcePath}" />
+                        </DockPanel>
+                        <DockPanel  Grid.Row="5" Grid.ColumnSpan="3">
 
                             <CheckBox  x:Name="WPFCB" IsChecked="{Binding IsWpf}" Grid.Column="0" Content="Wpf"/>
                             <RadioButton  x:Name="Gemoo" Grid.Row="4" IsChecked="{Binding IsGemoo}" Grid.Column="0" Content="Gemoo" GroupName="Company"/>
                             <RadioButton  x:Name="Any" Grid.Row="4" IsChecked="{Binding IsAny}" Grid.Column="0" Content="Any" GroupName="Company"/>
                         </DockPanel>
-                        <DockPanel Visibility="{Binding ElementName=WPFCB,Path=IsChecked,Converter={StaticResource ConverterBoolToVisibility}}" Grid.Row="5" Grid.Column="0">
+                        <DockPanel Visibility="{Binding ElementName=WPFCB,Path=IsChecked,Converter={StaticResource ConverterBoolToVisibility}}" Grid.Row="6" Grid.Column="0">
                             <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="WPFSln路径：" />
                             <Button DockPanel.Dock="Right" CommandParameter="WPFsln" Command="{Binding SelectFileCommand}" />
                             <TextBlock Style="{StaticResource T2}" Text="{Binding WpfSlnPath}" />
                         </DockPanel>
-                        <DockPanel Visibility="{Binding ElementName=WPFCB,Path=IsChecked,Converter={StaticResource ConverterBoolToVisibility}}" Grid.Row="5" Grid.Column="2">
+                        <DockPanel Visibility="{Binding ElementName=WPFCB,Path=IsChecked,Converter={StaticResource ConverterBoolToVisibility}}" Grid.Row="6" Grid.Column="2">
                             <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="输出路径：" />
                             <Button Name="Choose" DockPanel.Dock="Right" Command="{Binding SelectFolderCommand}" CommandParameter="WPFOutput" />
                             <TextBlock Style="{StaticResource T2}" Text="{Binding WpfOutPutPath}" />
                         </DockPanel>
                     </Grid>
                     <Button DockPanel.Dock="Top" Content="保存" Margin="0,4,0,0" Padding="0,6" Command="{Binding SaveCommand}" />
-                    <TextBox Grid.Row="6" Grid.ColumnSpan="3" Margin="0,8,0,0" IsReadOnly="True" ScrollViewer.HorizontalScrollBarVisibility="Auto" Padding="0,2" ScrollViewer.VerticalScrollBarVisibility="Auto" Text="{Binding ErrorText}" />
+                    <TextBox Grid.Row="7" Grid.ColumnSpan="3" Margin="0,8,0,0" IsReadOnly="True" ScrollViewer.HorizontalScrollBarVisibility="Auto" Padding="0,2" ScrollViewer.VerticalScrollBarVisibility="Auto" Text="{Binding ErrorText}" />
                 </DockPanel>
             </Grid>
         </Border>

@@ -24,6 +24,8 @@ using SignatureTool2.Utilites.Sign;
 using SignatureTool2.ViewModel;
 using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
 using System.Management;
+using SignatureTool2.ViewModel.Setting;
+using System.Windows.Controls.Primitives;
 
 namespace SignatureTool2.ViewModel
 {
@@ -47,6 +49,7 @@ namespace SignatureTool2.ViewModel
         private Visibility loadingVisibility = Visibility.Collapsed;
 
         private int clickCount;
+        private bool isOpenProtecterPanel;
 
         public SignatureModel SelectedItem
         {
@@ -96,6 +99,18 @@ namespace SignatureTool2.ViewModel
             }
         }
 
+        public bool IsOpenProtecterPanel
+        {
+            get
+            {
+                return isOpenProtecterPanel;
+            }
+            set
+            {
+                SetProperty(ref isOpenProtecterPanel, value, "IsOpenProtecterPanel");
+            }
+        }
+
         public Visibility LoadingVisibility
         {
             get
@@ -110,6 +125,8 @@ namespace SignatureTool2.ViewModel
 
         public ObservableCollection<SignatureModel> FileList { get; }
 
+        public ObservableCollection<ProtecterModel> ProtecterList { get; }
+
         public ICommand AddCommand { get; set; }
 
         public ICommand DeleteCommand { get; set; }
@@ -119,6 +136,7 @@ namespace SignatureTool2.ViewModel
         public ICommand SelectSourcePathCommand { get; set; }
 
         public ICommand SelectTargetPathCommand { get; set; }
+        public ICommand SelectProtectPathCommand { get; set; }
         
 
         public SignatureViewModel()
@@ -129,12 +147,15 @@ namespace SignatureTool2.ViewModel
             SaveConfigCommand = new DelegateCommand(OnSaveConfigCommand);
             SelectSourcePathCommand = new DelegateCommand(OnSelectSourcePathCommand);
             SelectTargetPathCommand = new DelegateCommand(OnSelectTargetPathCommand);
+            SelectProtectPathCommand = new DelegateCommand(OnSelectProtectPathCommand);
             SignCommand = new DelegateCommand(OnSignCommand);
             StopCommand = new DelegateCommand(OnStopCommand);
             FileList = new ObservableCollection<SignatureModel>();
+            ProtecterList = new ObservableCollection<ProtecterModel>();
             ReadConfig();
             LogTool.Instance.WriteLogEventAdvance += Instance_WriteLogEventAdvance;
         }
+
 
         private void Instance_WriteLogEventAdvance(TraceEventType arg1, string msg)
         {
@@ -211,6 +232,20 @@ namespace SignatureTool2.ViewModel
                 }
             }
         }
+        private void OnSelectProtectPathCommand()
+        {
+            if (CheckHasData())
+            {
+                (string, string) filter = default((string, string));
+                filter.Item1 = "混淆工程文件";
+                filter.Item2 = "*.nrproj";
+                string text = ChooseDialogTool.OpenSelectFileDialog(filter,false);
+                if (!text.IsNullOrEmpty())
+                {
+                    SelectedItem.ProtectProject = text;
+                }
+            }
+        }
 
         private void OnSelectSourcePathCommand()
         {
@@ -257,6 +292,7 @@ namespace SignatureTool2.ViewModel
             SignatureModel signatureModel = new SignatureModel();
             signatureModel.SoftwareName = "新增项";
             signatureModel.IsSelected = true;
+            signatureModel.SelectProtecterCommand =new DelegateCommand<SignatureModel>(OnSelectProtecter);
             FileList.ToList().ForEach(delegate (SignatureModel p)
             {
                 p.IsSelected = false;
@@ -282,8 +318,13 @@ namespace SignatureTool2.ViewModel
                         BiuldArgument = dictionary.GetValue<string>("BiuldArgument"),
                         LastSignTime = dictionary.GetValue<DateTime>("LastSignTime"),
                         LastBiuldTime = dictionary.GetValue<DateTime>("LastBiuldTime"),
-                        TargetPath = dictionary.GetValue<string>("TargetPath")
+                        TargetPath = dictionary.GetValue<string>("TargetPath"),
+                        ProtecterID = dictionary.GetValue<string>("ProtecterID"),
+                        ProtecterName= dictionary.GetValue<string>("ProtecterName"),
+                        ProtectProject = dictionary.GetValue<string>("ProtectProject"),
                     };
+
+                    item.SelectProtecterCommand = new DelegateCommand<SignatureModel>(OnSelectProtecter);
                     li.Add(item);
                 }
             });
@@ -293,6 +334,66 @@ namespace SignatureTool2.ViewModel
             }
             IOrderedEnumerable<SignatureModel> items = li.OrderBy((SignatureModel p) => p.SoftwareName);
             FileList.AddRange(items);
+        }
+
+        private void OnSelectProtecter(SignatureModel model)
+        {
+            IsOpenProtecterPanel = false;
+            IsOpenProtecterPanel = true;
+            ProtecterList.ToList().ForEach(delegate (ProtecterModel p)
+            {
+                p.SelectionChanged -= Model_SelectionChanged;
+            });
+            ProtecterList.Clear();
+            var nmodel = new ProtecterModel() { Name = "空" };
+            nmodel.SelectionChanged += Model_SelectionChanged;
+            ProtecterList.Add(nmodel);
+            foreach (ProtecterSettingModel compilerSetting in ProtecterTool.Instance.ProtecterSettingList)
+            {
+                ProtecterModel compilerModel = new ProtecterModel
+                {
+                    ProtecterID = compilerSetting.protecterID,
+                    ProtecterPath = compilerSetting.protecterPath,
+                    Name = compilerSetting.name
+                };
+                compilerModel.SelectionChanged += Model_SelectionChanged;
+                if (model.ProtecterID == compilerSetting.protecterID)
+                {
+                    compilerModel.SelectionChanged -= Model_SelectionChanged;
+                    compilerModel.IsSelected = true;
+                    compilerModel.SelectionChanged += Model_SelectionChanged;
+                }
+                ProtecterList.Add(compilerModel);
+            }
+            if (ProtecterList.FirstOrDefault((ProtecterModel p) => p.IsSelected) == null)
+            {
+                model.ProtecterID = "";
+                model.ProtecterName = "";
+            }
+
+        }
+
+        private void Nmodel_SelectionChanged(ProtecterModel obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void Model_SelectionChanged(ProtecterModel model)
+        {
+            IsOpenProtecterPanel = false;
+            if (SelectedItem != null && model.IsSelected)
+            {
+                if(string.IsNullOrEmpty(model.ProtecterPath)){
+
+                    SelectedItem.ProtecterID = null;
+                    SelectedItem.ProtecterName = model.Name;
+                }
+                else
+                {
+                    SelectedItem.ProtecterID = model.ProtecterID;
+                    SelectedItem.ProtecterName = model.Name;
+                }
+            }
         }
 
         private void SaveConfig()
@@ -321,6 +422,9 @@ namespace SignatureTool2.ViewModel
                 dictionary.Add("ExcutableName", file.ExcutableName);
                 dictionary.Add("ProductInfoPath", file.ProductInfoPath);
                 dictionary.Add("TargetPath", file.TargetPath);
+                dictionary.Add("ProtecterID", file.ProtecterID??"");
+                dictionary.Add("ProtecterName", file.ProtecterName??"");
+                dictionary.Add("ProtectProject", file.ProtectProject ?? "");
                 list.Add(dictionary);
             }
             if (list.Count > 0)
@@ -414,8 +518,30 @@ namespace SignatureTool2.ViewModel
             {
 
                 var compiler = CompilerTool.Instance.GetCompilerByID(null);
-                SlnBuild.Build(model.BiuldArgument, Path.GetDirectoryName(compiler.vsBuilderPath));
+                SlnBuild.Build(model.BiuldArgument, Path.GetDirectoryName(compiler.vsBuilderPath.Trim('\"')));
                 model.LastBiuldTime = DateTime.Now;
+                if (model.ProtecterID != null && model.ProtectProject != null)
+                {
+                    //去混淆
+                    ProtecterSettingModel protecter = ProtecterTool.Instance.GetProtecterByID(model.ProtecterID);
+                    bool flag = protecter.ProtecterFile(model.ProtectProject);
+                    if (flag)
+                    {
+                        foreach (string item in Directory.GetDirectories(model.SourcePath, "*_Secure"))
+                        {
+                            string[] files = Directory.GetFiles(item);
+                            foreach (string filesr in files)
+                            {
+                                FileInfo file = new FileInfo(filesr);
+                                string filename = file.Name;
+                                string tagpath = Path.Combine(model.SourcePath, filename);
+                                file.CopyTo(tagpath, true);
+                                file.Delete();
+                            }
+                            FolderTool.DeleteFolder(item);
+                        }
+                    }
+                }
             }
             FindNeedCopyFile(model);
             if (CopyFileToTarget(model))

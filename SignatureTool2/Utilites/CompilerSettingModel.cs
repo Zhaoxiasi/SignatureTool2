@@ -1,6 +1,7 @@
 // SignTool.Utilites.CompilerSettingModel
 #define TRACE
 using System.Diagnostics;
+using System.IO;
 using SignatureTool2.Utilites.Extensions;
 using SignatureTool2.Utilites.Files;
 
@@ -70,8 +71,8 @@ namespace SignatureTool2.Utilites
                 CreateNoWindow = true
             });
             process.Start();
-            process.StandardOutput.ReadToEnd();
+            var ss = process.StandardOutput.ReadToEnd();
             return savePath.IsExistsFile();
         }
-    } 
+    }
 }
