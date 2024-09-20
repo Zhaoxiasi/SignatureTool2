@@ -94,10 +94,10 @@
                     <ListBox Name="L1" Grid.Column="0" Style="{StaticResource StyleListBox}" BorderThickness="0 0 1 1" ItemContainerStyle="{StaticResource StyleLBI}" SelectionMode="Extended" SelectedIndex="0" ScrollViewer.CanContentScroll="False" ItemsSource="{Binding FileList}" SelectedItem="{Binding SelectedItem}" />
                 </DockPanel>
                 <StackPanel Grid.Column="2" Grid.Row="0" Grid.IsSharedSizeScope="True" Margin="0,10,10,0">
-                    <DockPanel>
-                        <TextBlock Width="60" DockPanel.Dock="Left" Text="名称：" VerticalAlignment="Center" />
+                    <DockPanel  VerticalAlignment="Center">
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="名称：" />
                         <TextBox Margin="10,0,10,0" MinHeight="24" Width="150" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.SoftwareName}" />
-                        <TextBlock Width="60" DockPanel.Dock="Left" Text="公司：" VerticalAlignment="Center" />
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="公司："/>
                         <Button Name="ChooseCompany" DockPanel.Dock="Right" Content="选择" Command="{Binding SelectedItem.SelectCompanyCommand}" CommandParameter="{Binding SelectedItem}" />
                         <TextBlock   Text="{Binding SelectedItem.Company}" />
                     </DockPanel>
@@ -129,15 +129,15 @@
                             <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <DockPanel Margin="0,10,0,0">
+                        <DockPanel Margin="0,0,0,0">
                             <TextBlock Width="60" DockPanel.Dock="Left" Text="混淆工程路径：" VerticalAlignment="Center" ToolTip="需要将Release目录中的文件拷贝到打包的文件夹的路径" />
                             <Button DockPanel.Dock="Right" Content="选择" Padding="4,2" Command="{Binding SelectProtectPathCommand}" />
                             <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.ProtectProject}" />
                         </DockPanel>
-                        <DockPanel Grid.Column="2">
-                            <TextBlock  DockPanel.Dock="Left" Text="混淆器器：" />
+                        <DockPanel  Grid.Column="2" VerticalAlignment="Center">
+                            <TextBlock  DockPanel.Dock="Left" Text="混淆器器："   />
                             <Button Name="ChooseCompiler" DockPanel.Dock="Right" Content="选择" Command="{Binding SelectedItem.SelectProtecterCommand}" CommandParameter="{Binding SelectedItem}" />
-                            <TextBlock   Text="{Binding SelectedItem.ProtecterName}" />
+                            <TextBlock   Text="{Binding SelectedItem.ProtecterName}"  />
                         </DockPanel>
                     </Grid>
                     <Button Margin="0,10,0,0" MinHeight="30" Content="保存配置" Padding="6,4" Command="{Binding SaveConfigCommand}" />

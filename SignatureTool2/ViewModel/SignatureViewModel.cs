@@ -207,7 +207,7 @@ namespace SignatureTool2.ViewModel
         private void OnSignCommand()
         {
             List<SignatureModel> list = FileList.ToList().FindAll((SignatureModel p) => p.IsSelected && p.IsAvailable);
-            if (list.Count != 0 && TipsTool.OpenTipsWindow("注意：\r\nU盘你插了吗？\r\n首次使用时需要输入密码，若没有提示输入，则本次签名不合格！！！\r\n是否继续？(密码已复制)", "签名警告", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes)
+            if (list.Count != 0)
             {
                 _errorList.Clear();
                 Package(list);
@@ -515,13 +515,19 @@ namespace SignatureTool2.ViewModel
                 SemaphoreTool semaphoreTool = new SemaphoreTool(li.Count, 1);
                 foreach (SignatureModel item in li)
                 {
-                    if (!CheckKey(item.Company))
-                    {
-                        Trace.TraceWarning($"无法完成{item.SoftwareName}项，因为{item.Company}的Key没有插入！");
-                        continue;
 
+                    var company = CompanyTool.Instance.GetCompanyByID(item.CompanyID);
+                    if (company != null)
+                    {
+
+                        App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject(company.Password));
+                        Trace.TraceWarning($"{item.SoftwareName}项<{company.Name}>公司的Key密码已复制！");
                     }
-                    Trace.TraceWarning($"{item.SoftwareName}项Key密码已复制！");
+                    else
+                    {
+                        Trace.TraceWarning($"{item.SoftwareName}项公司属性未找到！");
+                        continue;
+                    }
                     semaphoreTool.InvokeByThread(delegate (object par)
                     {
                         if (CopyFile((SignatureModel)par))

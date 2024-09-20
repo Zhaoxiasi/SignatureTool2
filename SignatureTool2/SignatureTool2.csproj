@@ -47,18 +47,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CustomMarshalers" />
-    <Reference Include="Dapplo.Log, Version=2.0.0.0, Culture=neutral, PublicKeyToken=26f3e58a2304a05e, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dapplo.Log.2.0.1\lib\net471\Dapplo.Log.dll</HintPath>
-    </Reference>
-    <Reference Include="Dapplo.Windows.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5be96fed5d651fee, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dapplo.Windows.Common.1.0.28\lib\net472\Dapplo.Windows.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="Dapplo.Windows.Devices, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5be96fed5d651fee, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dapplo.Windows.Devices.1.0.28\lib\net472\Dapplo.Windows.Devices.dll</HintPath>
-    </Reference>
-    <Reference Include="Dapplo.Windows.Messages, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5be96fed5d651fee, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dapplo.Windows.Messages.1.0.28\lib\net472\Dapplo.Windows.Messages.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Expression.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Unnoficial.Microsoft.Expression.Drawing.1.0.0\lib\Microsoft.Expression.Drawing.dll</HintPath>
     </Reference>
