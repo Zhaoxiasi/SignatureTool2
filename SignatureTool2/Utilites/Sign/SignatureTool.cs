@@ -24,7 +24,7 @@ namespace SignatureTool2.Utilites.Sign
 
         private static List<string> _supportSignFile = new List<string> { ".dll", ".exe", ".cat" ,".msi"};
 
-        private string _signCommandLine = "\"{0}\" sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a \"{1}\"";
+        private string _signCommandLine = "\"{0}\" sign /sha1 {1} /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a \"{2}\"";
 
         private string _cmdLine = "cmd /c \" {0} \"";
 
