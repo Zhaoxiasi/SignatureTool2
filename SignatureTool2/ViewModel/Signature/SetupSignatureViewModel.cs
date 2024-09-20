@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Markup;
 using Prism.Commands;
 using SignatureTool2;
 using SignatureTool2.Utilites;
@@ -34,6 +35,7 @@ namespace SignatureTool2.ViewModel.Signature
 
         private string errorText;
 
+        private bool isOpenCompanyPanel;
         private bool isOpenComplierPanel;
 
         private bool isWaitting;
@@ -62,6 +64,17 @@ namespace SignatureTool2.ViewModel.Signature
             }
         }
 
+        public bool IsOpenCompanyPanel
+        {
+            get
+            {
+                return isOpenCompanyPanel;
+            }
+            set
+            {
+                SetProperty(ref isOpenCompanyPanel, value, "IsOpenCompanyPanel");
+            }
+        }
         public bool IsOpenComplierPanel
         {
             get
@@ -89,6 +102,7 @@ namespace SignatureTool2.ViewModel.Signature
         public ObservableCollection<SetupSignatureModel> DataList { get; }
 
         public ObservableCollection<CompilerModel> CompilerList { get; }
+        public ObservableCollection<CompanyModel> CompanyList { get; }
 
         public DelegateCommand AddCommand { get; }
 
@@ -106,6 +120,7 @@ namespace SignatureTool2.ViewModel.Signature
             SaveCommand = new DelegateCommand(OnSave);
             DataList = new ObservableCollection<SetupSignatureModel>();
             CompilerList = new ObservableCollection<CompilerModel>();
+            CompanyList = new ObservableCollection<CompanyModel>();
             ReadConfig();
             LogTool.Instance.WriteLogEvent += Instance_WriteLogEvent;
             setupSaveFolder = Directory.GetDirectoryRoot(AppDomain.CurrentDomain.BaseDirectory).Combine("Output");
@@ -128,7 +143,7 @@ namespace SignatureTool2.ViewModel.Signature
             foreach (SetupSignatureModel data in DataList)
             {
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_CompilerID, data.CompilerID);
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_CompanyID, data.CompilerID);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_CompilerName, data.CompilerName);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_Name, data.Name);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_SaveName, data.SaveName);
@@ -143,6 +158,8 @@ namespace SignatureTool2.ViewModel.Signature
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_IsWpf, data.IsWpf.ToString());
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFSlnPath, data.WpfSlnPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFOutputPath, data.WpfOutPutPath);
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_Company, data.CompanyName);
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_CompanyID, data.CompanyID);
                 list.Add(dictionary);
                 data.IsSaved = true;
             }
@@ -188,6 +205,7 @@ namespace SignatureTool2.ViewModel.Signature
                 IsSelected = true
             };
             setupSignatureModel.SelectCompilerCommand = new DelegateCommand<SetupSignatureModel>(OnSelectCompiler);
+            setupSignatureModel.SelectCompanyCommand = new DelegateCommand<SetupSignatureModel>(OnSelectCompany);
             DataList.Add(setupSignatureModel);
         }
 
@@ -228,6 +246,39 @@ namespace SignatureTool2.ViewModel.Signature
                 selected.CompilerName = "";
             }
         }
+        private void OnSelectCompany(SetupSignatureModel selected)
+        {
+            IsOpenCompanyPanel = false;
+            IsOpenCompanyPanel = true;
+            CompanyList.ToList().ForEach(delegate (CompanyModel p)
+            {
+                p.SelectionChanged -= Model_SelectionChanged;
+            });
+            CompanyList.Clear();
+            foreach (CompanyModel compilerSetting in CompanyTool.Instance.CompanySettingList)
+            {
+                CompanyModel compilerModel = new CompanyModel
+                {
+                    CompanyID = compilerSetting.CompanyID,
+                    Name = compilerSetting.Name,
+                    Sha1 = compilerSetting.Sha1,
+                    Password = compilerSetting.Password,
+                };
+                compilerModel.SelectionChanged += Model_SelectionChanged;
+                if (selected.CompanyID == compilerSetting.CompanyID)
+                {
+                    compilerModel.SelectionChanged -= Model_SelectionChanged;
+                    compilerModel.IsSelected = true;
+                    compilerModel.SelectionChanged += Model_SelectionChanged;
+                }
+                CompanyList.Add(compilerModel);
+            }
+            if (CompanyList.FirstOrDefault((CompanyModel p) => p.IsSelected) == null)
+            {
+                selected.CompanyID = "";
+                selected.CompanyName = "";
+            }
+        }
 
         private void Model_SelectionChanged(CompilerModel obj)
         {
@@ -236,6 +287,15 @@ namespace SignatureTool2.ViewModel.Signature
             {
                 SelectedSetup.CompilerID = obj.CompilerID;
                 SelectedSetup.CompilerName = obj.Name;
+            }
+        }
+        private void Model_SelectionChanged(CompanyModel obj)
+        {
+            IsOpenCompanyPanel = false;
+            if (SelectedSetup != null && obj.IsSelected)
+            {
+                SelectedSetup.CompanyID = obj.CompanyID;
+                SelectedSetup.CompanyName = obj.Name;
             }
         }
 
@@ -265,13 +325,18 @@ namespace SignatureTool2.ViewModel.Signature
                 {
                     if (item.IsSelected)
                     {
-                        var company = item.IsGemoo ? "Gemoo" : "iMobie";
-                        if (!SignatureTool.CheckKey(company))
+                        var company = CompanyTool.Instance.GetCompanyByID(item.CompanyID);
+                        if (company != null)
                         {
-                            Trace.TraceWarning($"无法完成{item.Name}项，因为{company}的Key没有插入！");
+                            Clipboard.SetDataObject(company.Password);
+                            Trace.TraceWarning($"{item.Name}项<{company.Name}>公司的Key密码已复制！");
+                        }
+                        else
+                        {
+                            Trace.TraceWarning($"{item.Name}项公司属性未找到！");
+                            item.CreateResult = "失败！！！";
                             continue;
                         }
-                        Trace.TraceWarning($"{item.Name}项Key密码已复制！");
 
                         item.CreateResult = "生成中...";
                         if (CreateUninstall(item))
@@ -328,8 +393,8 @@ namespace SignatureTool2.ViewModel.Signature
                     if (flag)
                     {
                         Trace.TraceInformation("签名<" + model.Name + ">的卸载包");
-                        SignModel model2 = SignatureTool.CreateSignModel(text);
-                        flag = new SignatureTool().SignatureFile(model2);
+                        SignModel model2 = SignatureTool.CreateSignModel(text,model.CompanyID);
+                        flag = new SignatureTool().SignatureFile(model2) ==1;
                         Trace.TraceInformation("签名<" + model.Name + ">的卸载包" + (flag ? "成功" : "失败"));
                         if (flag)
                         {
@@ -364,7 +429,7 @@ namespace SignatureTool2.ViewModel.Signature
                         list.Add(file);
                     }
                 }
-                var smodel = SignatureTool.CreateSignModel(list);
+                var smodel = SignatureTool.CreateSignModel(list, model.CompanyID);
 
                 foreach (var item in smodel)
                 {
@@ -410,8 +475,8 @@ namespace SignatureTool2.ViewModel.Signature
                 if (flag)
                 {
                     Trace.TraceInformation("签名<" + model.Name + ">的安装包");
-                    SignModel model2 = SignatureTool.CreateSignModel(text);
-                    flag = new SignatureTool().SignatureFile(model2);
+                    SignModel model2 = SignatureTool.CreateSignModel(text, model.CompanyID);
+                    flag = new SignatureTool().SignatureFile(model2) == 1;
                     Trace.TraceInformation("签名<" + model.Name + ">的安装包" + (flag ? "成功" : "失败"));
                 }
                 else
@@ -437,7 +502,7 @@ namespace SignatureTool2.ViewModel.Signature
                 {
                     SetupSignatureModel setupSignatureModel = new SetupSignatureModel
                     {
-                        CompilerID = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_CompilerID),
+                        CompilerID = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_CompanyID),
                         CompilerName = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_CompilerName),
                         Name = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_Name),
                         SaveName = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_SaveName),
@@ -449,6 +514,8 @@ namespace SignatureTool2.ViewModel.Signature
                         UninstallNSISPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_UninstallNSISPath),
                         WpfSlnPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_WPFSlnPath),
                         WpfOutPutPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_WPFOutputPath),
+                        CompanyID = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_CompanyID),
+                        CompanyName = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_Company),
                         IsSaved = true
                     };
                     var IsWpf = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_IsWpf);
@@ -468,6 +535,7 @@ namespace SignatureTool2.ViewModel.Signature
                         setupSignatureModel.IsGemoo = false;
                     }
                     setupSignatureModel.SelectCompilerCommand = new DelegateCommand<SetupSignatureModel>(OnSelectCompiler);
+                    setupSignatureModel.SelectCompanyCommand = new DelegateCommand<SetupSignatureModel>(OnSelectCompany);
                     DataList.Add(setupSignatureModel);
                 }
             }

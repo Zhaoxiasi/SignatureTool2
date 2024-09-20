@@ -178,6 +178,11 @@
                             <Button DockPanel.Dock="Right" Command="{Binding SelectFolderCommand}"  CommandParameter="WPFResource"/>
                             <TextBlock Style="{StaticResource T2}" Text="{Binding WpfResourcePath}" />
                         </DockPanel>
+                        <DockPanel Grid.Row="4" Grid.Column="2">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="公司名称：" />
+                            <Button Name="ChooseCompany" DockPanel.Dock="Right" Command="{Binding SelectCompanyCommand}" CommandParameter="{Binding}" />
+                            <TextBlock Style="{StaticResource T2}" Text="{Binding CompanyName}" />
+                        </DockPanel>
                         <DockPanel  Grid.Row="5" Grid.ColumnSpan="3">
 
                             <CheckBox  x:Name="WPFCB" IsChecked="{Binding IsWpf}" Grid.Column="0" Content="Wpf"/>
@@ -203,6 +208,11 @@
         <Popup StaysOpen="False" AllowsTransparency="True" Placement="Bottom" IsOpen="{Binding IsOpenComplierPanel}" PlacementTarget="{Binding ElementName=ChooseCompiler}">
             <Border Background="#FFFFFFFF">
                 <ListBox Style="{StaticResource StyleListBox}" SelectionMode="Single" ItemContainerStyle="{StaticResource StyleListBoxItemCompiler}" ItemsSource="{Binding CompilerList}" />
+            </Border>
+        </Popup>
+        <Popup StaysOpen="False" AllowsTransparency="True" Placement="Bottom" IsOpen="{Binding IsOpenCompanyPanel}" PlacementTarget="{Binding ElementName=ChooseCompany}">
+            <Border Background="#FFFFFFFF">
+                <ListBox Style="{StaticResource StyleListBox}" SelectionMode="Single" ItemContainerStyle="{StaticResource StyleListBoxItemCompiler}" ItemsSource="{Binding CompanyList}" />
             </Border>
         </Popup>
     </Grid>

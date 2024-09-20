@@ -6,7 +6,7 @@ namespace SignatureTool2.Utilites
     {
         CS_Name,
         CS_SaveName,
-        CS_CompilerID,
+        CS_CompanyID,
         CS_CompilerName,
         CS_SetupNSISPath,
         CS_SetupIconPath,
@@ -27,6 +27,10 @@ namespace SignatureTool2.Utilites
         C_WpfResourcePath,
         CS_CompanyIdx,
         C_ProtecterID,
-        C_ProtecterPath
+        C_ProtecterPath,
+        C_CompanySha1,
+        C_CompanyPassword,
+        C_CompanyID,
+        CS_Company
     } 
 }

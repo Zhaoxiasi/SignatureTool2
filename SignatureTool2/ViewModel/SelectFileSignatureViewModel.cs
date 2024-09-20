@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -34,6 +35,8 @@ namespace SignatureTool2.ViewModel
         private string errorText;
 
         private bool isEnabled = true;
+        private bool isSignGemoo = true;
+        private bool isSigniMobie = false;
 
         private string signTip;
 
@@ -62,6 +65,28 @@ namespace SignatureTool2.ViewModel
             set
             {
                 SetProperty(ref isEnabled, value, "IsEnabled");
+            }
+        }
+        public bool IsSigniMobie
+        {
+            get
+            {
+                return isSigniMobie;
+            }
+            set
+            {
+                SetProperty(ref isSigniMobie, value, "IsSigniMobie");
+            }
+        }
+        public bool IsSignGemoo
+        {
+            get
+            {
+                return isSignGemoo;
+            }
+            set
+            {
+                SetProperty(ref isSignGemoo, value, "IsSignGemoo");
             }
         }
 
@@ -148,9 +173,9 @@ namespace SignatureTool2.ViewModel
 
         private void OnSignCommand(string pa)
         {
-            if (FileList.Count != 0 && TipsTool.OpenTipsWindow("注意：\r\nU盘你插了吗？\r\n首次使用时需要输入密码，若没有提示输入，则本次签名不合格！！！\r\n是否继续？（密码已复制）", "签名警告", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes)
+            if (FileList.Count != 0)
             {
-                base.OnSign("");
+                //base.OnSign("");
                 _errorList.Clear();
                 List<SignFileModel> li = (!(pa == "all")) ? FileList.ToList().FindAll((SignFileModel p) => p.IsSelected) : FileList.ToList();
                 Package(li);
@@ -170,6 +195,27 @@ namespace SignatureTool2.ViewModel
             {
                 p.SignStatus = "";
             });
+            string SignSha1 = "";
+            if (IsSignGemoo)
+            {
+                var company = CompanyTool.Instance.GetCompanyByName("Gemoo");
+                if (company != null)
+                {
+                    SignSha1 = company.Sha1;
+                    Clipboard.SetDataObject(company.Password);
+                    Trace.TraceInformation($"Signature Password Copied!Company:<{company.Name}>");
+                }
+            }
+            else if (IsSigniMobie)
+            {
+                var company = CompanyTool.Instance.GetCompanyByName("iMobie");
+                if (company != null)
+                {
+                    SignSha1 = company.Sha1;
+                    Clipboard.SetDataObject(company.Password);
+                    Trace.TraceInformation($"Signature Password Copied!Company:<{company.Name}>");
+                }
+            }
             LoadingVisibility = Visibility.Visible;
             Trace.TraceInformation($"signature total {li.Count} file(s)");
             new Thread((ThreadStart)delegate
@@ -192,12 +238,13 @@ namespace SignatureTool2.ViewModel
                         _signList.Enqueue(signatureTool);
                         SignModel model = new SignModel
                         {
-                            FilePath = signFileModel.FilePath
+                            FilePath = signFileModel.FilePath,
+                            sha1 = SignSha1
                         };
-                        bool num = signatureTool.SignatureFile(model);
+                        int num = signatureTool.SignatureFile(model);
                         Interlocked.Increment(ref currentCount);
                         SignTip = $"{currentCount}/{totalCount}";
-                        if (num)
+                        if (num == 1)
                         {
                             Interlocked.Increment(ref successCount);
                             signFileModel.SignStatus = "成功！";

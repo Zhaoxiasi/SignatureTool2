@@ -15,8 +15,7 @@ namespace SignatureTool2.ViewModel
         public ICommand StopCommand { get; set; }
         protected  void OnSign(string company)
         {
-            if(company.ToLower().Equals("gemoo"))
-                Clipboard.SetDataObject("Gemoo2022#");
+            if (company.ToLower().Equals("gemoo")) { }
             else
                 Clipboard.SetDataObject("cIn02x0WqfoJ{172");
         }

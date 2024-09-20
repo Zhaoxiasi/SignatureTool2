@@ -98,7 +98,8 @@
                         <TextBlock Width="60" DockPanel.Dock="Left" Text="名称：" VerticalAlignment="Center" />
                         <TextBox Margin="10,0,10,0" MinHeight="24" Width="150" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.SoftwareName}" />
                         <TextBlock Width="60" DockPanel.Dock="Left" Text="公司：" VerticalAlignment="Center" />
-                        <TextBox Margin="10,0,0,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.Company}" />
+                        <Button Name="ChooseCompany" DockPanel.Dock="Right" Content="选择" Command="{Binding SelectedItem.SelectCompanyCommand}" CommandParameter="{Binding SelectedItem}" />
+                        <TextBlock   Text="{Binding SelectedItem.Company}" />
                     </DockPanel>
                     <DockPanel Margin="0,10,0,0">
                         <TextBlock Width="60" DockPanel.Dock="Left" Text="源路径：" VerticalAlignment="Center" ToolTip="生成的Release目录的路径" />
@@ -151,6 +152,11 @@
         <Popup StaysOpen="False" AllowsTransparency="True" Placement="Bottom" IsOpen="{Binding IsOpenProtecterPanel}" PlacementTarget="{Binding ElementName=ChooseCompiler}">
             <Border Background="#FFFFFFFF">
                 <ListBox Style="{StaticResource StyleListBox}" SelectionMode="Single" ItemContainerStyle="{StaticResource StyleListBoxItemProtecter}" ItemsSource="{Binding ProtecterList}" />
+            </Border>
+        </Popup>
+        <Popup StaysOpen="False" AllowsTransparency="True" Placement="Bottom" IsOpen="{Binding IsOpenCompanyPanel}" PlacementTarget="{Binding ElementName=ChooseCompany}">
+            <Border Background="#FFFFFFFF">
+                <ListBox Style="{StaticResource StyleListBox}" SelectionMode="Single" ItemContainerStyle="{StaticResource StyleListBoxItemProtecter}" ItemsSource="{Binding CompanyList}" />
             </Border>
         </Popup>
     </Grid>

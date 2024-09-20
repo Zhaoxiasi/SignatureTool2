@@ -24,7 +24,7 @@ namespace SignatureTool2.Utilites.Sign
 
         private static List<string> _supportSignFile = new List<string> { ".dll", ".exe", ".cat" ,".msi"};
 
-        private string _signCommandLine = "\"{0}\" sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a \"{1}\"";
+        private string _signCommandLine = "\"{0}\" sign /sha1 {1} /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a \"{2}\"";
 
         private string _cmdLine = "cmd /c \" {0} \"";
 
@@ -74,7 +74,7 @@ namespace SignatureTool2.Utilites.Sign
             return count == count2;
         }
 
-        public bool SignatureFile(SignModel model, int triedCount = 0)
+        public int SignatureFile(SignModel model, int triedCount = 0)
         {
             lock (_lockInputPasscode)
             {
@@ -87,35 +87,54 @@ namespace SignatureTool2.Utilites.Sign
             return Signature(model, triedCount);
         }
 
-        private bool Signature(SignModel model, int triedCount = 0)
+        private int Signature(SignModel model, int triedCount = 0)
         {
             if (IsAllSkip)
             {
-                return false;
+                return -4;
             }
-            bool flag = false;
+            int flag = 0;
             if (!IsSupportSign(model.FilePath))
             {
                 model.SignResult = SignResultEnum.NotSupport;
-                return false;
+                return -1;
             }
             string text = "";
             text = AppDomain.CurrentDomain.BaseDirectory.Combine("signtool.exe");
             if (!text.IsExistsFile())
             {
                 Trace.TraceInformation("<\"signtool.exe\"> is not exists");
-                return false;
+                return -8;
             }
-            string argument = StringExtension.Format(_cmdLine, StringExtension.Format(_signCommandLine, text, model.FilePath));
-            string[] array = Signature(argument).Split(new string[1] { "\r\n" }, StringSplitOptions.None);
+            string argument = StringExtension.Format(_cmdLine, StringExtension.Format(_signCommandLine, text, model.sha1, model.FilePath));
+             var output= Signature(argument);
+            string[] array  = output.Split(new string[1] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
             if (array.Length > 1)
             {
-                flag = array[1].Contains("Successfully signed") && array[1].Contains(model.FilePath.GetFileName());
+                if (array[1].Contains("Successfully signed") && array[1].Contains(model.FilePath.GetFileName()))
+                {
+                    flag = 1;
+                }
             }
-            if (!flag)
+            else
+            {
+                if (array[0].Contains("Invalid SHA1 hash format") && array[0].Contains(model.sha1))
+                {
+                    flag = -2;
+                }else if(array[0].Contains("No certificates were found that met all the given criteria."))
+                {
+                    flag = -2;
+                }
+            }
+            if (flag != 1)
             {
                 Thread.Sleep(300);
                 model.SignResult = SignResultEnum.Failed;
+                if (flag == -2)
+                {
+                    var company = CompanyTool.Instance.GetCompanyBySha1(model.sha1);
+                    Trace.TraceInformation("signature <" + model.FilePath.GetFileName() + $"> Failed!Î´¼ì²âµ½<{company.Name}>µÄkey£¡");
+                }
             }
             else
             {
@@ -126,21 +145,23 @@ namespace SignatureTool2.Utilites.Sign
             return flag;
         }
 
-        public static SignModel CreateSignModel(string file)
+        public static SignModel CreateSignModel(string file, string companyID)
         {
-            return CreateSignModel(new List<string> { file }).FirstOrDefault();
+            return CreateSignModel(new List<string> { file }, companyID).FirstOrDefault();
         }
 
-        public static List<SignModel> CreateSignModel(List<string> files)
+        public static List<SignModel> CreateSignModel(List<string> files, string companyID)
         {
             List<SignModel> li = new List<SignModel>();
+           var company =  CompanyTool.Instance.GetCompanyByID(companyID);
             files?.ForEach(delegate (string p)
             {
                 if (GetIsSigned(p))
                     return;
                 SignModel item = new SignModel
                 {
-                    FilePath = p
+                    FilePath = p,
+                    sha1 = company.Sha1
                 };
                 li.Add(item);
             });
@@ -176,11 +197,14 @@ namespace SignatureTool2.Utilites.Sign
                 processStartInfo.UseShellExecute = false;
                 processStartInfo.Arguments = argument;
                 processStartInfo.RedirectStandardOutput = true;
+                processStartInfo.RedirectStandardError = true;
                 processStartInfo.FileName = "cmd.exe";
                 Process process = new Process();
                 process.StartInfo = processStartInfo;
                 process.Start();
-                return process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+                var output =process.StandardOutput.ReadToEnd();
+                return error + output;
             }
             catch (Exception ex)
             {
@@ -214,19 +238,16 @@ namespace SignatureTool2.Utilites.Sign
         {
             if (company.ToLower().Equals("gemoo"))
             {
-                if (SafeNetTool.GemooIn)
-                {
-                    App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("Gemoo2022#"));
-                    return true;
-                }
+
+                App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("Gemoo2022#"));
+                return true;
+
             }
             else
             {
-                if (SafeNetTool.iMobieIn)
-                {
-                    App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("cIn02x0WqfoJ{172"));
-                    return true;
-                }
+                App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("cIn02x0WqfoJ{172"));
+                return true;
+
             }
             return false;
         }

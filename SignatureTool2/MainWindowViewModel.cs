@@ -126,6 +126,14 @@ namespace SignatureTool2
             protecterSettingView.DataContext = new ProtecterSettingViewModel();
             tabModel.TabContent = protecterSettingView;
             Tables.Add(tabModel);
+            tabModel = new TabModel
+            {
+                TabName = "公司设置"
+            };
+            CompanySettingView companySettingView = new CompanySettingView();
+            companySettingView.DataContext = new CompanySettingViewModel();
+            tabModel.TabContent = companySettingView;
+            Tables.Add(tabModel);
         }
     }
 

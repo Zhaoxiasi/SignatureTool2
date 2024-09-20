@@ -46,6 +46,7 @@
                 </TextBlock>
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="10" />
                         <RowDefinition Height="auto" />
@@ -54,7 +55,12 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <ListBox Grid.Row="0" Grid.Column="0" Style="{StaticResource StyleListBox}" BorderThickness="1" Margin="10,10,0,0" ItemContainerStyle="{StaticResource StyleLBI}" SelectionMode="Extended" ScrollViewer.CanContentScroll="False" AllowDrop="True" ItemsSource="{Binding FileList}" Drop="ListBox_Drop" KeyDown="ListBox_KeyDown">
+                    <DockPanel>
+                        <TextBlock Text="请选择签名公司名称："/>
+                        <RadioButton Content="Gemoo" IsChecked="{Binding IsSignGemoo}"/>
+                        <RadioButton Content="iMobie"  IsChecked="{Binding IsSigniMobie}"/>
+                    </DockPanel>
+                    <ListBox Grid.Row="1" Grid.Column="0" Style="{StaticResource StyleListBox}" BorderThickness="1" Margin="10,10,0,0" ItemContainerStyle="{StaticResource StyleLBI}" SelectionMode="Extended" ScrollViewer.CanContentScroll="False" AllowDrop="True" ItemsSource="{Binding FileList}" Drop="ListBox_Drop" KeyDown="ListBox_KeyDown">
                         <FrameworkElement.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="签名" CommandParameter="signle" Command="{Binding SignCommand}" />
@@ -62,8 +68,8 @@
                             </ContextMenu>
                         </FrameworkElement.ContextMenu>
                     </ListBox>
-                    <TextBox Grid.Row="0" Grid.Column="1" Margin="10,10,10,0" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Focusable="False" Text="{Binding ErrorText}" />
-                    <WrapPanel Margin="0,0,0,5" Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Center">
+                    <TextBox Grid.Row="1" Grid.Column="1" Margin="10,10,10,0" TextWrapping="WrapWithOverflow" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Focusable="False" Text="{Binding ErrorText}" />
+                    <WrapPanel Margin="0,0,0,5" Grid.Row="3" Grid.ColumnSpan="2" HorizontalAlignment="Center">
                         <FrameworkElement.Resources>
                             <ResourceDictionary>
                                 <Style x:Key="{x:Type Button}" TargetType="{x:Type Button}">

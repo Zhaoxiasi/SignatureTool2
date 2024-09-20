@@ -143,6 +143,7 @@
     <Compile Include="TabModel.cs" />
     <Compile Include="Utilites\ProtecterSettingModel.cs" />
     <Compile Include="Utilites\CompilerSettingModel.cs" />
+    <Compile Include="Utilites\CompanyTool.cs" />
     <Compile Include="Utilites\ProtecterTool.cs" />
     <Compile Include="Utilites\CompilerTool.cs" />
     <Compile Include="Utilites\ConfigTool.cs" />
@@ -167,6 +168,7 @@
     <Compile Include="ViewModel\CopyFileModel.cs" />
     <Compile Include="ViewModel\SelectFileSignatureViewModel.cs" />
     <Compile Include="ViewModel\SettingViewModel.cs" />
+    <Compile Include="ViewModel\Setting\CompanySettingViewModel.cs" />
     <Compile Include="ViewModel\Setting\ProtecterSettingViewModel.cs" />
     <Compile Include="ViewModel\Setting\ProtecterModel.cs" />
     <Compile Include="ViewModel\Setting\CompilerModel.cs" />
@@ -185,6 +187,9 @@
     </Compile>
     <Compile Include="View\Setting\CompilerSettingView.xaml.cs">
       <DependentUpon>CompilerSettingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Setting\CompanySettingView.xaml.cs">
+      <DependentUpon>CompanySettingView.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\Setting\ProtecterSettingView.xaml.cs">
       <DependentUpon>ProtecterSettingView.xaml</DependentUpon>
@@ -220,6 +225,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\Setting\CompilerSettingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Setting\CompanySettingView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

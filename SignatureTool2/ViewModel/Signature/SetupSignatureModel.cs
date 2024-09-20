@@ -19,6 +19,7 @@ namespace SignatureTool2.ViewModel.Signature
     public class SetupSignatureModel : ViewModelBase
     {
         private string name;
+        private string companyname;
 
         private string saveName;
 
@@ -50,6 +51,7 @@ namespace SignatureTool2.ViewModel.Signature
         private string createResult;
 
         public string CompilerID { get; set; }
+        public string CompanyID { get; set; }
 
         public string Name
         {
@@ -60,6 +62,17 @@ namespace SignatureTool2.ViewModel.Signature
             set
             {
                 SetProperty(ref name, value, "Name");
+            }
+        }
+        public string CompanyName
+        {
+            get
+            {
+                return companyname;
+            }
+            set
+            {
+                SetProperty(ref companyname, value, "CompanyName");
             }
         }
 
@@ -270,6 +283,7 @@ namespace SignatureTool2.ViewModel.Signature
         public DelegateCommand<object> SelectFileCommand { get; }
 
         public DelegateCommand<SetupSignatureModel> SelectCompilerCommand { get; set; }
+        public DelegateCommand<SetupSignatureModel> SelectCompanyCommand { get; set; }
 
         public SetupSignatureModel()
         {

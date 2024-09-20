@@ -50,6 +50,7 @@ namespace SignatureTool2.ViewModel
 
         private int clickCount;
         private bool isOpenProtecterPanel;
+        private bool isOpenCompanyPanel;
 
         public SignatureModel SelectedItem
         {
@@ -110,6 +111,17 @@ namespace SignatureTool2.ViewModel
                 SetProperty(ref isOpenProtecterPanel, value, "IsOpenProtecterPanel");
             }
         }
+        public bool IsOpenCompanyPanel
+        {
+            get
+            {
+                return isOpenCompanyPanel;
+            }
+            set
+            {
+                SetProperty(ref isOpenCompanyPanel, value, "IsOpenCompanyPanel");
+            }
+        }
 
         public Visibility LoadingVisibility
         {
@@ -126,6 +138,7 @@ namespace SignatureTool2.ViewModel
         public ObservableCollection<SignatureModel> FileList { get; }
 
         public ObservableCollection<ProtecterModel> ProtecterList { get; }
+        public ObservableCollection<CompanyModel> CompanyList { get; }
 
         public ICommand AddCommand { get; set; }
 
@@ -152,6 +165,7 @@ namespace SignatureTool2.ViewModel
             StopCommand = new DelegateCommand(OnStopCommand);
             FileList = new ObservableCollection<SignatureModel>();
             ProtecterList = new ObservableCollection<ProtecterModel>();
+            CompanyList = new ObservableCollection<CompanyModel>();
             ReadConfig();
             LogTool.Instance.WriteLogEventAdvance += Instance_WriteLogEventAdvance;
         }
@@ -204,21 +218,17 @@ namespace SignatureTool2.ViewModel
         {
             if (company.ToLower().Equals("gemoo"))
             {
-                if (SafeNetTool.GemooIn)
-                {
-                    App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("Gemoo2022#"));
-                    return true;
-                }
+
+                App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("Gemoo2022#"));
+                return true;
+
             }
             else
             {
-                if (SafeNetTool.iMobieIn)
-                {
-                    App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("cIn02x0WqfoJ{172"));
-                    return true;
-                }
+                App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("cIn02x0WqfoJ{172"));
+                return true;
+
             }
-            return false;
         }
 
         private void OnSelectTargetPathCommand()
@@ -293,6 +303,7 @@ namespace SignatureTool2.ViewModel
             signatureModel.SoftwareName = "新增项";
             signatureModel.IsSelected = true;
             signatureModel.SelectProtecterCommand =new DelegateCommand<SignatureModel>(OnSelectProtecter);
+            signatureModel.SelectCompanyCommand =new DelegateCommand<SignatureModel>(OnSelectCompany);
             FileList.ToList().ForEach(delegate (SignatureModel p)
             {
                 p.IsSelected = false;
@@ -313,6 +324,7 @@ namespace SignatureTool2.ViewModel
                         SoftwareName = dictionary.GetValue<string>("SoftwareName"),
                         ExcutableName = dictionary.GetValue<string>("ExcutableName"),
                         Company = dictionary.GetValue<string>("Company"),
+                        CompanyID = dictionary.GetValue<string>("CompanyID"),
                         ProductInfoPath = dictionary.GetValue<string>("ProductInfoPath"),
                         SourcePath = dictionary.GetValue<string>("SourcePath"),
                         BiuldArgument = dictionary.GetValue<string>("BiuldArgument"),
@@ -325,6 +337,7 @@ namespace SignatureTool2.ViewModel
                     };
 
                     item.SelectProtecterCommand = new DelegateCommand<SignatureModel>(OnSelectProtecter);
+                    item.SelectCompanyCommand = new DelegateCommand<SignatureModel>(OnSelectCompany);
                     li.Add(item);
                 }
             });
@@ -373,11 +386,61 @@ namespace SignatureTool2.ViewModel
 
         }
 
-        private void Nmodel_SelectionChanged(ProtecterModel obj)
+        private void OnSelectCompany(SignatureModel model)
         {
-            throw new NotImplementedException();
+            IsOpenCompanyPanel = false;
+            IsOpenCompanyPanel = true;
+            CompanyList.ToList().ForEach(delegate (CompanyModel p)
+            {
+                p.SelectionChanged -= Model_SelectionChanged;
+            });
+            CompanyList.Clear();
+            var nmodel = new CompanyModel() { Name = "空" };
+            nmodel.SelectionChanged += Model_SelectionChanged;
+            CompanyList.Add(nmodel);
+            foreach (CompanyModel item in CompanyTool.Instance.CompanySettingList)
+            {
+                CompanyModel compilerModel = new CompanyModel()
+                {
+                    CompanyID = item.CompanyID,
+                    Name = item.Name,
+                    Password = item.Password,
+                    Sha1 = item.Sha1,
+                };
+                compilerModel.SelectionChanged += Model_SelectionChanged;
+                if (model.CompanyID == compilerModel.CompanyID)
+                {
+                    compilerModel.SelectionChanged -= Model_SelectionChanged;
+                    compilerModel.IsSelected = true;
+                    compilerModel.SelectionChanged += Model_SelectionChanged;
+                }
+                CompanyList.Add(compilerModel);
+            }
+            if (CompanyList.FirstOrDefault((CompanyModel p) => p.IsSelected) == null)
+            {
+                model.CompanyID = "";
+                model.Company = "";
+            }
         }
 
+        private void Model_SelectionChanged(CompanyModel model)
+        {
+            IsOpenCompanyPanel = false;
+            if (SelectedItem != null && model.IsSelected)
+            {
+                if (string.IsNullOrEmpty(model.Sha1))
+                {
+
+                    SelectedItem.ProtecterID = null;
+                    SelectedItem.ProtecterName = model.Name;
+                }
+                else
+                {
+                    SelectedItem.CompanyID = model.CompanyID;
+                    SelectedItem.Company = model.Name;
+                }
+            }
+        }
         private void Model_SelectionChanged(ProtecterModel model)
         {
             IsOpenProtecterPanel = false;
@@ -416,6 +479,7 @@ namespace SignatureTool2.ViewModel
                 dictionary.Add("SoftwareName", file.SoftwareName);
                 dictionary.Add("SourcePath", file.SourcePath);
                 dictionary.Add("Company", file.Company??"");
+                dictionary.Add("CompanyID", file.CompanyID??"");
                 dictionary.Add("LastSignTime", file.LastSignTime);
                 dictionary.Add("LastBiuldTime", file.LastBiuldTime);
                 dictionary.Add("BiuldArgument", file.BiuldArgument);

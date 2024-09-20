@@ -157,6 +157,7 @@ namespace SignatureTool2.ViewModel
             }
         }
         public string ProtecterID { get; internal set; }
+        public string CompanyID { get; internal set; }
 		public string protecterName;
 
         public bool IsAvailable
@@ -175,6 +176,7 @@ namespace SignatureTool2.ViewModel
             }
         }
         public DelegateCommand<SignatureModel> SelectProtecterCommand { get; set; }
+        public DelegateCommand<SignatureModel> SelectCompanyCommand { get; set; }
 		public string protecterProject;
 
         public SignatureModel()
@@ -213,7 +215,7 @@ namespace SignatureTool2.ViewModel
         internal List<SignModel> CreateModels(List<string> allFiles)
         {
 			if(SignModelList==null)
-            SignModelList = SignatureTool.CreateSignModel(allFiles);
+            SignModelList = SignatureTool.CreateSignModel(allFiles, CompanyID);
 			return SignModelList;
         }
     }
