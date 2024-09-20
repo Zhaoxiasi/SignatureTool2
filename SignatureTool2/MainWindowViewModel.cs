@@ -117,6 +117,14 @@ namespace SignatureTool2
             CompilerSettingView compilerSettingView = new CompilerSettingView();
             compilerSettingView.DataContext = new CompilerSettingViewModel();
             tabModel.TabContent = compilerSettingView;
+            Tables.Add(tabModel); 
+            tabModel = new TabModel
+            {
+                TabName = "混淆器设置"
+            };
+            ProtecterSettingView protecterSettingView = new ProtecterSettingView();
+            protecterSettingView.DataContext = new ProtecterSettingViewModel();
+            tabModel.TabContent = protecterSettingView;
             Tables.Add(tabModel);
         }
     }

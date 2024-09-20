@@ -13,6 +13,7 @@ namespace SignatureTool2.Utilites
         CS_UninstallNSISPath,
         CS_UninstallIconPath,
         CS_UninstallExeSaveFolderPath,
+        CS_WpfResourcePath,
         C_Name,
         C_CompilerID,
         C_CompilerPath,
@@ -24,6 +25,8 @@ namespace SignatureTool2.Utilites
         CS_WPFOutputPath,
         C_VsBuilderPath,
         C_WpfResourcePath,
-        CS_CompanyIdx
+        CS_CompanyIdx,
+        C_ProtecterID,
+        C_ProtecterPath
     } 
 }

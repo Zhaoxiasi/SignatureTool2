@@ -1,6 +1,8 @@
 ﻿// SignTool.ViewModel.SignatureViewModel
+using Prism.Commands;
 using SignatureTool2.Utilites.Extensions;
 using SignatureTool2.Utilites.Sign;
+using SignatureTool2.ViewModel.Signature;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -131,9 +133,33 @@ namespace SignatureTool2.ViewModel
 			{
 				SetProperty(ref targetPath, value, "TargetPath");
 			}
-		}
+        }
+        public string ProtecterName
+        {
+            get
+            {
+                return protecterName;
+            }
+            set
+            {
+                SetProperty(ref protecterName, value, "ProtecterName");
+            }
+        }
+        public string ProtectProject
+        {
+            get
+            {
+                return protecterProject;
+            }
+            set
+            {
+                SetProperty(ref protecterProject, value, "ProtectProject");
+            }
+        }
+        public string ProtecterID { get; internal set; }
+		public string protecterName;
 
-		public bool IsAvailable
+        public bool IsAvailable
 		{
 			get
 			{
@@ -148,6 +174,8 @@ namespace SignatureTool2.ViewModel
 				return false;
             }
         }
+        public DelegateCommand<SignatureModel> SelectProtecterCommand { get; set; }
+		public string protecterProject;
 
         public SignatureModel()
         {

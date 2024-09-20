@@ -15,6 +15,7 @@ using SignatureTool2.Utilites;
 using SignatureTool2.Utilites.DialogWindow;
 using SignatureTool2.Utilites.Directorys;
 using SignatureTool2.Utilites.Extensions;
+using SignatureTool2.Utilites.Files;
 using SignatureTool2.Utilites.Log;
 using SignatureTool2.Utilites.Sign;
 using SignatureTool2.ViewModel.Setting;
@@ -134,10 +135,11 @@ namespace SignatureTool2.ViewModel.Signature
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_SetupIconPath, data.SetupIconPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_SetupNSISPath, data.SetupNSISPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_UninstallExeSaveFolderPath, data.UninstallEXESavePath);
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WpfResourcePath, data.WpfResourcePath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_UninstallIconPath, data.UninstallIconPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_UninstallNSISPath, data.UninstallNSISPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_IsWpf, data.IsWpf.ToString());
-                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_CompanyIdx, data.IsGemoo? "0":"1");
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_CompanyIdx, data.IsGemoo ? "0" : "1");
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_IsWpf, data.IsWpf.ToString());
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFSlnPath, data.WpfSlnPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFOutputPath, data.WpfOutPutPath);
@@ -145,6 +147,8 @@ namespace SignatureTool2.ViewModel.Signature
                 data.IsSaved = true;
             }
             ConfigTool.Instance.SetValueOfRoot(CRootKey.Compiler_Setup, list);
+            if (list.Count > 0)
+                ConfigTool.Instance.BackupConfig();
             Trace.TraceInformation("保存配置成功！");
         }
 
@@ -253,6 +257,7 @@ namespace SignatureTool2.ViewModel.Signature
             }
             List<SetupSignatureModel> li = DataList.ToList().FindAll((SetupSignatureModel p) => p.IsSelected);
             IsWaitting = true;
+            string outputDir = li.FirstOrDefault().SetupNSISPath;
             Task.Factory.StartNew(delegate
             {
                 int num = 0;
@@ -345,8 +350,8 @@ namespace SignatureTool2.ViewModel.Signature
         {
             FolderTool.DeleteFolder(model.WpfOutPutPath);
 
-            var compiler = CompilerTool.Instance.GetCompilerByID(model.CompilerID); 
-            SlnBuild.Build(model.CreateBuildArg(),Path.GetDirectoryName(compiler.vsBuilderPath.Trim('\"')));
+            var compiler = CompilerTool.Instance.GetCompilerByID(model.CompilerID);
+            SlnBuild.Build(model.CreateBuildArg(), Path.GetDirectoryName(compiler.vsBuilderPath.Trim('\"')));
             string installexePath = Path.Combine(model.WpfOutPutPath, "setup.exe");
             string uninstallexePath = Path.Combine(model.WpfOutPutPath, "uninstall.exe");
             if (installexePath.IsExistsFile() && uninstallexePath.IsExistsFile())
@@ -354,12 +359,20 @@ namespace SignatureTool2.ViewModel.Signature
                 List<string> list = new List<string>();
                 foreach (var file in Directory.GetFiles(model.WpfOutPutPath))
                 {
-                    if (file.EndsWith(".dll")|| file.EndsWith(".exe"))
+                    if (file.EndsWith(".dll") || file.EndsWith(".exe"))
                     {
                         list.Add(file);
                     }
                 }
                 var smodel = SignatureTool.CreateSignModel(list);
+
+                foreach (var item in smodel)
+                {
+                    string name = Path.GetFileName(item.FilePath);
+                    string Targetname = Path.Combine(model.WpfResourcePath, name);
+                    FileTool.CopyFile(item.FilePath, Targetname);
+
+                }
                 var flag = new SignatureTool().SignatureFiles("wpf Installers", smodel);
                 return flag;
             }
@@ -380,7 +393,19 @@ namespace SignatureTool2.ViewModel.Signature
             if (model.VerifyWhileCreateSetup())
             {
                 Directory.CreateDirectory(setupSaveFolder);
-                string text = setupSaveFolder.Combine(model.SaveName + ".exe");
+                string text = model.SaveName;
+                string parent = Directory.GetParent(model.SetupNSISPath).FullName;
+                setupSaveFolder = parent;
+                if (!text.EndsWith(".exe"))
+                {
+                    text = Path.Combine(setupSaveFolder, model.SaveName + ".exe");
+                }
+                else
+                {
+                    text = Path.Combine(setupSaveFolder, model.SaveName);
+                }
+                if (File.Exists(text))
+                    File.Delete(text);
                 flag = CompilerTool.Instance.GetCompilerByID(model.CompilerID).CompilerFile(model.SetupNSISPath, text);
                 if (flag)
                 {
@@ -419,6 +444,7 @@ namespace SignatureTool2.ViewModel.Signature
                         SetupIconPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_SetupIconPath),
                         SetupNSISPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_SetupNSISPath),
                         UninstallEXESavePath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_UninstallExeSaveFolderPath),
+                        WpfResourcePath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_WpfResourcePath),
                         UninstallIconPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_UninstallIconPath),
                         UninstallNSISPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_UninstallNSISPath),
                         WpfSlnPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_WPFSlnPath),
@@ -431,10 +457,12 @@ namespace SignatureTool2.ViewModel.Signature
                         setupSignatureModel.IsWpf = isWPf;
                     }
                     var CompanyIdx = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_CompanyIdx);
-                    if(CompanyIdx == "0"){
+                    if (CompanyIdx == "0")
+                    {
                         setupSignatureModel.IsGemoo = true;
-                        setupSignatureModel.IsAny= false;
-                    }else if(CompanyIdx == "1")
+                        setupSignatureModel.IsAny = false;
+                    }
+                    else if (CompanyIdx == "1")
                     {
                         setupSignatureModel.IsAny = true;
                         setupSignatureModel.IsGemoo = false;
@@ -452,5 +480,5 @@ namespace SignatureTool2.ViewModel.Signature
             }
             DataList.OrderBy((SetupSignatureModel p) => p.Name);
         }
-    } 
+    }
 }
