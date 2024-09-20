@@ -214,7 +214,7 @@ namespace SignatureTool2.ViewModel
             {
                 if (SafeNetTool.iMobieIn)
                 {
-                    Clipboard.SetDataObject("cIn02x0WqfoJ{172");
+                    App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject("cIn02x0WqfoJ{172"));
                     return true;
                 }
             }

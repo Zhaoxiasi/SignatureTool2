@@ -46,7 +46,7 @@ namespace SignatureTool2
                     var id = card.GetCardUID();
                     if (id == "68810000")
                     {
-                        SafeNetTool.iMobieIn = true;
+                        SafeNetTool.GemooIn = true;
                     }
                 }
 
