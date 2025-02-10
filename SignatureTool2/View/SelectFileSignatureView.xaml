@@ -57,8 +57,7 @@
                     </Grid.ColumnDefinitions>
                     <DockPanel>
                         <TextBlock Text="请选择签名公司名称："/>
-                        <RadioButton Content="Gemoo" IsChecked="{Binding IsSignGemoo}"/>
-                        <RadioButton Content="iMobie"  IsChecked="{Binding IsSigniMobie}"/>
+                        <ComboBox ItemsSource="{Binding Companies}" DisplayMemberPath="Name" SelectedItem="{Binding SelectCompany}" Name="CompanyCB"/>
                     </DockPanel>
                     <ListBox Grid.Row="1" Grid.Column="0" Style="{StaticResource StyleListBox}" BorderThickness="1" Margin="10,10,0,0" ItemContainerStyle="{StaticResource StyleLBI}" SelectionMode="Extended" ScrollViewer.CanContentScroll="False" AllowDrop="True" ItemsSource="{Binding FileList}" Drop="ListBox_Drop" KeyDown="ListBox_KeyDown">
                         <FrameworkElement.ContextMenu>

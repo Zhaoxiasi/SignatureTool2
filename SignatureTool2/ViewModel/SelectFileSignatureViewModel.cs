@@ -21,6 +21,7 @@ using SignatureTool2.Utilites.Extensions;
 using SignatureTool2.Utilites.Log;
 using SignatureTool2.Utilites.Sign;
 using SignatureTool2.ViewModel;
+using SignatureTool2.ViewModel.Setting;
 
 namespace SignatureTool2.ViewModel
 {
@@ -128,6 +129,16 @@ namespace SignatureTool2.ViewModel
 
         public ObservableCollection<SignFileModel> FileList { get; }
 
+        public ObservableCollection<CompanyModel> Companies { get; }
+        private CompanyModel _selectCompany;
+
+        public CompanyModel SelectCompany
+        {
+            get => _selectCompany;
+            set => SetProperty(ref _selectCompany, value);
+        }
+
+
         public ICommand ChoseFolderCommand { get; }
 
         public ICommand ChoseFileCommand { get; }
@@ -144,6 +155,8 @@ namespace SignatureTool2.ViewModel
             StopCommand = new DelegateCommand(OnStopCommand);
             FileList = new ObservableCollection<SignFileModel>();
             _signList = new ConcurrentQueue<SignatureTool>();
+            Companies = new ObservableCollection<CompanyModel>();
+            Companies.AddRange(CompanyTool.Instance.CompanySettingList);
             LogTool.Instance.WriteLogEvent += Instance_WriteLogEvent;
         }
 
@@ -196,26 +209,33 @@ namespace SignatureTool2.ViewModel
                 p.SignStatus = "";
             });
             string SignSha1 = "";
-            if (IsSignGemoo)
+            if (SelectCompany != null)
             {
-                var company = CompanyTool.Instance.GetCompanyByName("Gemoo");
-                if (company != null)
-                {
-                    SignSha1 = company.Sha1;
-                    Clipboard.SetDataObject(company.Password);
-                    Trace.TraceInformation($"Signature Password Copied!Company:<{company.Name}>");
-                }
+                SignSha1 = SelectCompany.Sha1;
+                Clipboard.SetDataObject(SelectCompany.Password);
+
+                Trace.TraceInformation($"Signature Password Copied!Company:<{SelectCompany.Name}>");
             }
-            else if (IsSigniMobie)
-            {
-                var company = CompanyTool.Instance.GetCompanyByName("iMobie");
-                if (company != null)
-                {
-                    SignSha1 = company.Sha1;
-                    Clipboard.SetDataObject(company.Password);
-                    Trace.TraceInformation($"Signature Password Copied!Company:<{company.Name}>");
-                }
-            }
+            //if (IsSignGemoo)
+            //{
+            //    var company = CompanyTool.Instance.GetCompanyByName("Gemoo");
+            //    if (company != null)
+            //    {
+            //        SignSha1 = company.Sha1;
+            //        Clipboard.SetDataObject(company.Password);
+            //        Trace.TraceInformation($"Signature Password Copied!Company:<{company.Name}>");
+            //    }
+            //}
+            //else if (IsSigniMobie)
+            //{
+            //    var company = CompanyTool.Instance.GetCompanyByName("iMobie2024");
+            //    if (company != null)
+            //    {
+            //        SignSha1 = company.Sha1;
+            //        Clipboard.SetDataObject(company.Password);
+            //        Trace.TraceInformation($"Signature Password Copied!Company:<{company.Name}>");
+            //    }
+            //}
             LoadingVisibility = Visibility.Visible;
             Trace.TraceInformation($"signature total {li.Count} file(s)");
             new Thread((ThreadStart)delegate
