@@ -281,7 +281,10 @@ namespace SignatureTool2.ViewModel
         {
             if (SelectedItem != null)
             {
-                Com7zHelper com7 = new Com7zHelper();
+                new Thread((ThreadStart)delegate
+                {
+
+                    Com7zHelper com7 = new Com7zHelper();
                 string targeFileName = SelectedItem.TargetPath.GetFileName().Replace("custom", $"{DateTime.Now.Date.ToString("yyyyMMdd")}.7z");
                 string filepath = Path.Combine(Path.GetDirectoryName(SelectedItem.TargetPath), targeFileName);
                 if (filepath.IsExistsFile())
@@ -291,6 +294,7 @@ namespace SignatureTool2.ViewModel
                 com7.CompressDirectory(SelectedItem.TargetPath, filepath, "7z");
                 Trace.TraceInformation($"打包<{targeFileName}>完成！");
                 Process.Start("explorer.exe", $"/select,\"{filepath}\"");
+                }).Start();
             }
         }
         private void OnDeleteCommand()
