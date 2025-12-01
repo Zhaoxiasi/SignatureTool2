@@ -145,6 +145,7 @@ namespace SignatureTool2.ViewModel
         public ICommand DeleteCommand { get; set; }
 
         public ICommand SaveConfigCommand { get; set; }
+        public ICommand ReCompressCommand { get; set; }
 
         public ICommand SelectSourcePathCommand { get; set; }
 
@@ -158,6 +159,7 @@ namespace SignatureTool2.ViewModel
             AddCommand = new DelegateCommand(OnAddCommand);
             DeleteCommand = new DelegateCommand(OnDeleteCommand);
             SaveConfigCommand = new DelegateCommand(OnSaveConfigCommand);
+            ReCompressCommand = new DelegateCommand(OnReCompressCommand);
             SelectSourcePathCommand = new DelegateCommand(OnSelectSourcePathCommand);
             SelectTargetPathCommand = new DelegateCommand(OnSelectTargetPathCommand);
             SelectProtectPathCommand = new DelegateCommand(OnSelectProtectPathCommand);
@@ -275,6 +277,22 @@ namespace SignatureTool2.ViewModel
             SaveConfig();
         }
 
+        private void OnReCompressCommand()
+        {
+            if (SelectedItem != null)
+            {
+                Com7zHelper com7 = new Com7zHelper();
+                string targeFileName = SelectedItem.TargetPath.GetFileName().Replace("custom", $"{DateTime.Now.Date.ToString("yyyyMMdd")}.7z");
+                string filepath = Path.Combine(Path.GetDirectoryName(SelectedItem.TargetPath), targeFileName);
+                if (filepath.IsExistsFile())
+                {
+                    FileTool.DeleteFile(filepath);
+                }
+                com7.CompressDirectory(SelectedItem.TargetPath, filepath, "7z");
+                Trace.TraceInformation($"打包<{targeFileName}>完成！");
+                Process.Start("explorer.exe", $"/select,\"{filepath}\"");
+            }
+        }
         private void OnDeleteCommand()
         {
             List<SignatureModel> list = FileList.ToList().FindAll((SignatureModel p) => p.IsSelected);
