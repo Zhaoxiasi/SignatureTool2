@@ -177,7 +177,8 @@ namespace SignatureTool2.ViewModel
         {
             if(arg1 == TraceEventType.Transfer)
             {
-                _errorList.RemoveAt(0);
+                if (_errorList.Any())
+                    _errorList.RemoveAt(0);
             }
             _errorList.Insert(0, msg);
 
