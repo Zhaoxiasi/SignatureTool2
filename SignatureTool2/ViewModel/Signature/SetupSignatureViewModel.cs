@@ -329,7 +329,10 @@ namespace SignatureTool2.ViewModel.Signature
                         var company = CompanyTool.Instance.GetCompanyByID(item.CompanyID);
                         if (company != null)
                         {
-                            Clipboard.SetDataObject(company.Password);
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                Clipboard.SetDataObject(company.Password);
+                            });
                             Trace.TraceWarning($"{item.Name}项<{company.Name}>公司的Key密码已复制！");
                         }
                         else
@@ -394,8 +397,8 @@ namespace SignatureTool2.ViewModel.Signature
                     if (flag)
                     {
                         Trace.TraceInformation("签名<" + model.Name + ">的卸载包");
-                        SignModel model2 = SignatureTool.CreateSignModel(text,model.CompanyID);
-                        flag = new SignatureTool().SignatureFile(model2) ==1;
+                        SignModel model2 = SignatureTool.CreateSignModel(text, model.CompanyID);
+                        flag = new SignatureTool().SignatureFile(model2) == 1;
                         Trace.TraceInformation("签名<" + model.Name + ">的卸载包" + (flag ? "成功" : "失败"));
                         if (flag)
                         {
@@ -503,7 +506,7 @@ namespace SignatureTool2.ViewModel.Signature
                 {
                     SetupSignatureModel setupSignatureModel = new SetupSignatureModel
                     {
-                        CompilerID = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_CompanyID),
+                        CompilerID = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.C_CompilerID),
                         CompilerName = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_CompilerName),
                         Name = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_Name),
                         SaveName = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_SaveName),
