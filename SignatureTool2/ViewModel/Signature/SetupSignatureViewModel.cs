@@ -157,6 +157,7 @@ namespace SignatureTool2.ViewModel.Signature
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_CompanyIdx, data.IsGemoo ? "0" : "1");
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_IsWpf, data.IsWpf.ToString());
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFSlnPath, data.WpfSlnPath);
+                ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFSlnConfigPath, data.WpfSlnConfigPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_WPFOutputPath, data.WpfOutPutPath);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_Company, data.CompanyName);
                 ConfigTool.Instance.CreateDictionaryOfSecondRode(dictionary, CSecondNodeKey.CS_CompanyID, data.CompanyID);
@@ -513,11 +514,16 @@ namespace SignatureTool2.ViewModel.Signature
                         UninstallIconPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_UninstallIconPath),
                         UninstallNSISPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_UninstallNSISPath),
                         WpfSlnPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_WPFSlnPath),
+                        WpfSlnConfigPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_WPFSlnConfigPath),
                         WpfOutPutPath = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_WPFOutputPath),
                         CompanyID = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_CompanyID),
                         CompanyName = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_Company),
                         IsSaved = true
                     };
+                    if (string.IsNullOrEmpty(setupSignatureModel.WpfSlnConfigPath))
+                    {
+                        setupSignatureModel.WpfSlnConfigPath = "Release|AnyCPU";
+                    }
                     var IsWpf = instance.GetDictionaryValueOfSecondRode<string>(dictionary, CSecondNodeKey.CS_IsWpf);
                     if (bool.TryParse(IsWpf, out bool isWPf))
                     {

@@ -133,6 +133,8 @@
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <DockPanel Grid.Row="0" Grid.Column="0">
@@ -195,6 +197,10 @@
                             <TextBlock Style="{StaticResource T2}" Text="{Binding WpfSlnPath}" />
                         </DockPanel>
                         <DockPanel Visibility="{Binding ElementName=WPFCB,Path=IsChecked,Converter={StaticResource ConverterBoolToVisibility}}" Grid.Row="6" Grid.Column="2">
+                            <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="WPFSln配置：" />
+                            <TextBox Text="{Binding WpfSlnConfigPath}" />
+                        </DockPanel>
+                        <DockPanel Visibility="{Binding ElementName=WPFCB,Path=IsChecked,Converter={StaticResource ConverterBoolToVisibility}}" Grid.Row="8" Grid.Column="0">
                             <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="输出路径：" />
                             <Button Name="Choose" DockPanel.Dock="Right" Command="{Binding SelectFolderCommand}" CommandParameter="WPFOutput" />
                             <TextBlock Style="{StaticResource T2}" Text="{Binding WpfOutPutPath}" />

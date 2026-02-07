@@ -42,6 +42,8 @@ namespace SignatureTool2.ViewModel.Signature
 
         private string wpfSlnPath;
 
+        private string wpfSlnConfigPath = "Release|AnyCPU";
+
         private bool isSaved;
 
         private bool isWpf;
@@ -203,6 +205,17 @@ namespace SignatureTool2.ViewModel.Signature
             set
             {
                 SetProperty(ref wpfSlnPath, value, "WpfSlnPath");
+            }
+        }
+        public string WpfSlnConfigPath
+        {
+            get
+            {
+                return wpfSlnConfigPath;
+            }
+            set
+            {
+                SetProperty(ref wpfSlnConfigPath, value, "WpfSlnConfigPath");
             }
         }
         public bool IsWpf
@@ -482,7 +495,7 @@ namespace SignatureTool2.ViewModel.Signature
 
         internal string CreateBuildArg()
         {
-            return $"/c devenv \"{WpfSlnPath}\" /build \"Release|AnyCPU\"";
+            return $"/c devenv \"{WpfSlnPath}\" /build \"{WpfSlnConfigPath}\"";
         }
     } 
 }
