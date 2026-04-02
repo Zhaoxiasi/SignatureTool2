@@ -647,15 +647,19 @@ namespace SignatureTool2.ViewModel
                 }
                 else
                 {
-                    Trace.TraceWarning("签名<" + model.SoftwareName + ">出现失败，未能完成签名！");
-                    //retry
-                    var rrl=MessageBox.Show("部分签名没成功，需要重新签名", "注意！", MessageBoxButton.OKCancel);
-                    if(rrl == MessageBoxResult.OK)
+                    while (!result)
                     {
-                        result= Retry(model);
-                    }
-                    else
-                    {
+                        Trace.TraceWarning("签名<" + model.SoftwareName + ">出现失败，未能完成签名！");
+                        //retry
+                        var rrl = MessageBox.Show("部分签名没成功，需要重新签名", "注意！", MessageBoxButton.OKCancel);
+                        if (rrl == MessageBoxResult.OK)
+                        {
+                            result = Retry(model);
+                        }
+                        else
+                        {
+                        }
+
                     }
                 }
             }

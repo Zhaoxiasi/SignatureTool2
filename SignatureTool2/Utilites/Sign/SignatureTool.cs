@@ -232,7 +232,7 @@ namespace SignatureTool2.Utilites.Sign
             process.WaitForExit();
             string output = process.StandardOutput.ReadToEnd();
 
-            return output.Contains("Signing Certificate Chain:");
+            return output.Contains("Signing Certificate Chain:")&&!output.Contains("File is not timestamped.");
         }
 
         public static bool CheckKey(string company)
