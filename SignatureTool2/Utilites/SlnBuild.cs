@@ -32,7 +32,7 @@ namespace SignatureTool2.Utilites
                     {
                         return;
                     }
-                    Regex regex = new Regex(@"\d>\s+([a-zA-Z0-9\.]+)\s->\s.+");
+                    Regex regex = new Regex(@"\d>\s*([\w\.-]+)\s*->\s*(.+)");
                     if (regex.IsMatch(e1.Data))
                     {
                         Match m = regex.Match(e1.Data);

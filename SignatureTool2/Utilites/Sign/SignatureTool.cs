@@ -129,12 +129,23 @@ namespace SignatureTool2.Utilites.Sign
             }
             if (flag != 1)
             {
-                Thread.Sleep(300);
-                model.SignResult = SignResultEnum.Failed;
-                if (flag == -2)
+                if(flag == 0)
                 {
-                    var company = CompanyTool.Instance.GetCompanyBySha1(model.sha1);
-                    Trace.TraceInformation("signature <" + model.FilePath.GetFileName() + $"> Failed!未检测到<{company.Name}>的key！");
+                    if (GetIsSigned(model.FilePath))
+                    {
+                        model.SignResult = SignResultEnum.Success;
+                        Trace.TraceInformation("signature <" + model.FilePath.GetFileName() + "> success");
+                    }
+                }
+                else
+                {
+                    Thread.Sleep(300);
+                    model.SignResult = SignResultEnum.Failed;
+                    if (flag == -2)
+                    {
+                        var company = CompanyTool.Instance.GetCompanyBySha1(model.sha1);
+                        Trace.TraceInformation("signature <" + model.FilePath.GetFileName() + $"> Failed!未检测到<{company.Name}>的key！");
+                    }
                 }
             }
             else
