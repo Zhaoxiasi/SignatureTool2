@@ -158,6 +158,7 @@
                         <DockPanel Grid.Row="2" Grid.Column="0">
                             <TextBlock Style="{StaticResource T1}" DockPanel.Dock="Left" Text="卸载包NSIS：" />
                             <Button DockPanel.Dock="Right" CommandParameter="uninstall" Command="{Binding SelectFileCommand}" />
+                            <Button DockPanel.Dock="Right" Content="清除" CommandParameter="uninstall" Command="{Binding ClearCommand}" />
                             <TextBlock Style="{StaticResource T2}" Text="{Binding UninstallNSISPath}" />
                         </DockPanel>
                         <DockPanel Grid.Row="2" Grid.Column="2">

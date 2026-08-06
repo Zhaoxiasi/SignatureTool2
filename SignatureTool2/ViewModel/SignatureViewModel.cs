@@ -656,8 +656,9 @@ namespace SignatureTool2.ViewModel
                         {
                             result = Retry(model);
                         }
-                        else
+                        else if(rrl == MessageBoxResult.Cancel)
                         {
+                            break;
                         }
 
                     }

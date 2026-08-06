@@ -294,6 +294,7 @@ namespace SignatureTool2.ViewModel.Signature
         public DelegateCommand<object> SelectFolderCommand { get; }
 
         public DelegateCommand<object> SelectFileCommand { get; }
+        public DelegateCommand<object> ClearCommand { get; }
 
         public DelegateCommand<SetupSignatureModel> SelectCompilerCommand { get; set; }
         public DelegateCommand<SetupSignatureModel> SelectCompanyCommand { get; set; }
@@ -302,6 +303,31 @@ namespace SignatureTool2.ViewModel.Signature
         {
             SelectFolderCommand = new DelegateCommand<object>(OnSelectFolder);
             SelectFileCommand = new DelegateCommand<object>(OnSelectFile);
+            ClearCommand = new DelegateCommand<object>(OnClearCommand);
+        }
+
+        private void OnClearCommand(object obj)
+        {
+            string text = obj?.ToString();
+            switch (text)
+            {
+                case "install":
+                    SetupNSISPath = "";
+                    break;
+                case "uninstall":
+                    UninstallNSISPath = "";
+                    break;
+                case "installicon":
+                    SetupIconPath = "";
+                    break;
+                case "uninstallicon":
+                    UninstallIconPath = "";
+                    break;
+                case "WPFsln":
+                    WpfSlnPath = "";
+                    break;
+            }
+            IsSaved = false;
         }
 
         private void OnSelectFile(object obj)
