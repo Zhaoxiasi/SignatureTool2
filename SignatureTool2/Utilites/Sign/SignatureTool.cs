@@ -69,9 +69,14 @@ namespace SignatureTool2.Utilites.Sign
             semaphoreTool.WaitAllFinish();
             int count = files.Count;
             int count2 = files.FindAll((SignModel p) => p.SignResult == SignResultEnum.Success).Count;
-            int count3 = files.FindAll((SignModel p) => p.SignResult == SignResultEnum.Failed).Count;
+            var failedFiles = files.FindAll((SignModel p) => p.SignResult == SignResultEnum.Failed);
+            int count3 = failedFiles.Count;
             int count4 = files.FindAll((SignModel p) => p.SignResult == SignResultEnum.NotSupport).Count;
             Trace.TraceInformation($"signature <{sName}> all file(s) completed, total<{count}>-success<{count2}>-failed<{count3}>-not support<{count4}>");
+            if (count3 > 0)
+            {
+                Trace.TraceInformation($"Failed files:\r\n" + string.Join("\r\n", failedFiles.Select(p => p.FilePath)));
+            }
             return count == count2;
         }
 

@@ -6,3 +6,4 @@ release/
 *.csproj.user
 .vs/
 *.code-workspace
+*.ps1
