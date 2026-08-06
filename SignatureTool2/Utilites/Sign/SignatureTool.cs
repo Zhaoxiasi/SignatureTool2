@@ -213,9 +213,12 @@ namespace SignatureTool2.Utilites.Sign
                 processStartInfo.FileName = "cmd.exe";
                 Process process = new Process();
                 process.StartInfo = processStartInfo;
+                CancellationTokenSource cts = new CancellationTokenSource();
+                System.Threading.Tasks.Task.Run(() => CheckInputWindow(cts.Token));
                 process.Start();
                 var error = process.StandardError.ReadToEnd();
                 var output =process.StandardOutput.ReadToEnd();
+                cts.Cancel();
                 return error + output;
             }
             catch (Exception ex)
@@ -263,5 +266,42 @@ namespace SignatureTool2.Utilites.Sign
             }
             return false;
         }
-    } 
+        private async System.Threading.Tasks.Task CheckInputWindow(CancellationToken token)
+        {
+            await System.Threading.Tasks.Task.Run(async () =>
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    await System.Threading.Tasks.Task.Delay(500);
+                    if (token.IsCancellationRequested) break;
+                    var window = Utilities.WindowForm.NewWindow("Éè±¸µÇÂ¼");
+                    if (window == null) window = Utilities.WindowForm.NewWindow("Token Logon");
+                    if (window == null)
+                    {
+                        continue;
+                    }
+                    var process = Process.GetProcessById(window.ThreadID);
+                    if (process.ProcessName.StartsWith("signtool", StringComparison.OrdinalIgnoreCase))
+                    {
+                        IntPtr handle;
+                        handle = window.FindChild(0x3E9);
+                        var data = window.GetControlContent(handle);
+                        handle = window.FindChild(0x3EA);
+                        string password = "";
+                        if (data.StartsWith("imobie", StringComparison.OrdinalIgnoreCase))
+                            password = "cIn02x0WqfoJ{172";
+                        else if (data.StartsWith("gemoo", StringComparison.OrdinalIgnoreCase))
+                            password = "";
+                        else if (data.StartsWith("keeprix", StringComparison.OrdinalIgnoreCase))
+                            password = "Keeprix2025#";
+                        window.SendMessage(handle, Utilities.WindowMessageType.WM_SetText, password);
+                        handle = window.FindChild(0x1);
+                        window.SendMessage(handle, Utilities.WindowMessageType.WM_LeftButtonDown);
+                        window.SendMessage(handle, Utilities.WindowMessageType.WM_LeftButtonUp);
+                        break;
+                    }
+                }
+            }, token);
+        }
+    }
 }
