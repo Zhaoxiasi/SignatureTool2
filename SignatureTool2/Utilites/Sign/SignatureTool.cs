@@ -136,6 +136,12 @@ namespace SignatureTool2.Utilites.Sign
                         model.SignResult = SignResultEnum.Success;
                         Trace.TraceInformation("signature <" + model.FilePath.GetFileName() + "> success");
                     }
+                    else
+                    {
+
+                        Thread.Sleep(300);
+                        model.SignResult = SignResultEnum.Failed;
+                    }
                 }
                 else
                 {
