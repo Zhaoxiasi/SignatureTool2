@@ -188,6 +188,7 @@
     <Compile Include="View\Signature\SetupSignatureView.xaml.cs">
       <DependentUpon>SetupSignatureView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Utilites\WindowForm.cs" />
     <Page Include="Converter\Converters.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
