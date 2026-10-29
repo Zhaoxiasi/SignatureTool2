@@ -138,6 +138,7 @@
     <Compile Include="Utilites\CRootKey.cs" />
     <Compile Include="Utilites\CSecondNodeKey.cs" />
     <Compile Include="Utilites\DialogWindow\ChooseDialogTool.cs" />
+    <Compile Include="Utilites\DialogWindow\MessageDialog.cs" />
     <Compile Include="Utilites\DialogWindow\TipsTool.cs" />
     <Compile Include="Utilites\Directorys\FolderTool.cs" />
     <Compile Include="Utilites\Extensions\DictionaryExtension.cs" />

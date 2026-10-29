@@ -1,4 +1,4 @@
-// SignTool.ViewModel.SignatureViewModel
+﻿// SignTool.ViewModel.SignatureViewModel
 #define TRACE
 using System;
 using System.Collections.Concurrent;
@@ -615,23 +615,139 @@ namespace SignatureTool2.ViewModel
                 model.LastBiuldTime = DateTime.Now;
                 if (model.ProtecterID != null && model.ProtectProject != null)
                 {
-                    //去混淆
-                    ProtecterSettingModel protecter = ProtecterTool.Instance.GetProtecterByID(model.ProtecterID);
-                    bool flag = protecter.ProtecterFile(model.ProtectProject);
-                    if (flag)
+                    // 保护前先清理可能存在的历史 *_Secure 临时目录，避免假阳性
+                    try
                     {
-                        foreach (string item in Directory.GetDirectories(model.SourcePath, "*_Secure"))
+                        foreach (string oldDir in Directory.GetDirectories(model.SourcePath, "*_Secure"))
                         {
-                            string[] files = Directory.GetFiles(item);
-                            foreach (string filesr in files)
+                            FolderTool.DeleteFolder(oldDir);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.TraceWarning($"清理历史保护目录异常：{ex.Message}");
+                    }
+
+                    // 执行代码保护/混淆
+                    ProtecterSettingModel protecter = ProtecterTool.Instance.GetProtecterByID(model.ProtecterID);
+                    if (protecter == null)
+                    {
+                        Trace.TraceError($"未找到 ID 为 [{model.ProtecterID}] 的保护器配置！");
+                        var dlg = MessageBox.Show(
+                            $"未找到 ID 为 [{model.ProtecterID}] 的代码保护配置。\r\n\r\n是否忽略该配置并继续后续流程？\r\n【是】：忽略并继续流程\r\n【否】：终止流程",
+                            "提示 - 保护器未配置", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                        if (dlg != MessageBoxResult.Yes)
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        bool flag = protecter.ProtecterFile(model.ProtectProject);
+                        // flag 为 false 时弹框提示
+                        if (!flag)
+                        {
+                            Trace.TraceWarning($"项目 <{model.SoftwareName}> 代码保护执行返回失败 (flag=false)！");
+                            var flagDlg = MessageBox.Show(
+                                $"项目 <{model.SoftwareName}> 代码保护执行返回失败 (flag=false)！\r\n\r\n是否继续执行后续流程？\r\n【是】：继续流程\r\n【否】：终止流程",
+                                "提示 - 代码保护执行失败",
+                                MessageBoxButton.YesNo,
+                                MessageBoxImage.Warning);
+                            if (flagDlg != MessageBoxResult.Yes)
                             {
-                                FileInfo file = new FileInfo(filesr);
-                                string filename = file.Name;
-                                string tagpath = Path.Combine(model.SourcePath, filename);
-                                file.CopyTo(tagpath, true);
-                                file.Delete();
+                                Trace.TraceError($"用户选择终止，项目 <{model.SoftwareName}> 因保护执行失败已退出。");
+                                return false;
                             }
-                            FolderTool.DeleteFolder(item);
+                        }
+
+                        // 检测当前路径下是否存在保护后的文件夹 "*_Secure"
+                        bool secureHandled = false;
+                        while (!secureHandled)
+                        {
+                            string[] secureDirs = Directory.GetDirectories(model.SourcePath, "*_Secure");
+                            List<string> secureFiles = new List<string>();
+                            if (secureDirs != null && secureDirs.Length > 0)
+                            {
+                                foreach (var dir in secureDirs)
+                                {
+                                    secureFiles.AddRange(Directory.GetFiles(dir));
+                                }
+                            }
+
+                            if (secureFiles.Count > 0)
+                            {
+                                // 有保护产物，判定为成功
+                                // 统计受保护文件清单和原文件大小对比
+                                StringBuilder fileInfoSb = new StringBuilder();
+                                fileInfoSb.AppendLine($"检测到受保护文件共 {secureFiles.Count} 个：");
+                                int index = 1;
+                                foreach (string sf in secureFiles)
+                                {
+                                    FileInfo sfi = new FileInfo(sf);
+                                    string origPath = Path.Combine(model.SourcePath, sfi.Name);
+                                    if (File.Exists(origPath))
+                                    {
+                                        FileInfo origFi = new FileInfo(origPath);
+                                        fileInfoSb.AppendLine($"{index++}. {sfi.Name} (原大小: {origFi.Length} 字节 -> 保护后: {sfi.Length} 字节)");
+                                    }
+                                    else
+                                    {
+                                        fileInfoSb.AppendLine($"{index++}. {sfi.Name} (保护后: {sfi.Length} 字节, 源目录无同名文件)");
+                                    }
+                                }
+
+                                fileInfoSb.AppendLine("\r\n请核对上述受保护的文件清单是否完整：");
+                                fileInfoSb.AppendLine("【是】：清单完整无误，执行覆盖并继续流程");
+                                fileInfoSb.AppendLine("【否】：清单不完整或有异常，终止流程");
+
+                                var confirmResult = MessageDialog.Show(fileInfoSb.ToString(), $"保护产物确认 - <{model.SoftwareName}>", MessageBoxButton.YesNo);
+                                if (confirmResult != MessageBoxResult.Yes)
+                                {
+                                    Trace.TraceError($"用户确认保护产物不完整或选择终止，项目 <{model.SoftwareName}> 已退出。");
+                                    return false;
+                                }
+
+                                foreach (string item in secureDirs)
+                                {
+                                    string[] files = Directory.GetFiles(item);
+                                    foreach (string filesr in files)
+                                    {
+                                        FileInfo file = new FileInfo(filesr);
+                                        string filename = file.Name;
+                                        string tagpath = Path.Combine(model.SourcePath, filename);
+                                        file.CopyTo(tagpath, true);
+                                        file.Delete();
+                                    }
+                                    FolderTool.DeleteFolder(item);
+                                }
+                                secureHandled = true;
+                                Trace.TraceInformation($"项目 <{model.SoftwareName}> 保护文件已成功覆盖至目标源码目录。");
+                            }
+                            else
+                            {
+                                // 没有找到 *_Secure 文件夹或文件夹为空，提示用户选择下一步操作
+                                Trace.TraceWarning($"路径 <{model.SourcePath}> 下未检测到保护后的文件夹 \"*_Secure\"！");
+                                var missingResult = MessageBox.Show(
+                                    $"当前路径下未检测到保护后的文件夹 \"*_Secure\"（或文件夹内无文件）！\r\n\r\n路径：{model.SourcePath}\r\n\r\n" +
+                                    "请选择下一步操作：\r\n" +
+                                    "【是(Yes)】：重新检测 \"*_Secure\" 文件夹\r\n" +
+                                    "【否(No)】：跳过保护产物替换，直接继续后续流程\r\n" +
+                                    "【取消(Cancel)】：终止流程",
+                                    "提示 - 未检测到保护产物",
+                                    MessageBoxButton.YesNoCancel,
+                                    MessageBoxImage.Warning);
+
+                                if (missingResult == MessageBoxResult.Cancel)
+                                {
+                                    Trace.TraceError($"用户选择取消，项目 <{model.SoftwareName}> 因未找到保护产物已终止。");
+                                    return false;
+                                }
+                                else if (missingResult == MessageBoxResult.No)
+                                {
+                                    Trace.TraceWarning($"用户选择跳过 *_Secure 检测，直接继续流程。");
+                                    secureHandled = true;
+                                }
+                            }
                         }
                     }
                 }
