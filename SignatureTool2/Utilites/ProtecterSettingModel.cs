@@ -30,11 +30,24 @@ namespace SignatureTool2.Utilites
             }
         }
 
-        public bool ProtecterFile(string nsisPath)
+        public bool ProtecterFile(string projectPath)
         {
+            if (!IsAvailable)
+            {
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(projectPath) || !projectPath.IsExistsFile())
+            {
+                Trace.TraceError($"混淆工程文件不存在：{projectPath}");
+                return false;
+            }
+
             try
             {
-                string arguments = string.Format(commandParameter, nsisPath);
+                string formattedPath = projectPath.Contains(" ") && !commandParameter.Contains("\"{0}\"")
+                    ? $"\"{projectPath}\""
+                    : projectPath;
+                string arguments = string.Format(commandParameter, formattedPath);
                 using (Process process = new Process())
                 {
                     process.StartInfo = new ProcessStartInfo
