@@ -1,20 +1,29 @@
-﻿<UserControl x:Class="SignatureTool2.View.SignatureView" 
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d" 
+﻿<UserControl x:Class="SignatureTool2.View.SignatureView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             mc:Ignorable="d"
              xmlns:local="clr-namespace:SignatureTool2.View"
              d:DesignHeight="600" d:DesignWidth="600">
     <FrameworkElement.Resources>
         <ResourceDictionary>
+            <Style x:Key="MsiSettingsPanel" TargetType="StackPanel">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Path=SelectedItem.PackageMsi}" Value="True">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
             <Style x:Key="StyleLBI" TargetType="{x:Type ListBoxItem}">
                 <Setter Property="FrameworkElement.FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Padding" Value="6,0" />
                 <Setter Property="Height" Value="26" />
                 <Setter Property="ListBoxItem.IsSelected" Value="{Binding IsSelected}" />
                 <Setter Property="Background" Value="#00FFFFFF" />
-                <Setter Property="Content" Value="{Binding SoftwareName}" />
+                <Setter Property="Content" Value="{Binding DisplayName}" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type ListBoxItem}">
@@ -112,6 +121,13 @@
                         <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.TargetPath}" />
                     </DockPanel>
                     <DockPanel Margin="0,10,0,0">
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="同步模式：" VerticalAlignment="Center" ToolTip="增量：只拷贝比上次签名新的文件；严格同步：全量拷贝，并清理目标目录中源目录已不存在的文件" />
+                        <ComboBox Margin="10,0" MinWidth="120" HorizontalAlignment="Left" MinHeight="24" SelectedItem="{Binding Path=SelectedItem.SyncMode}">
+                            <sys:String>增量</sys:String>
+                            <sys:String>严格同步</sys:String>
+                        </ComboBox>
+                    </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
                         <TextBlock Width="60" DockPanel.Dock="Left" Text="ExeName：" VerticalAlignment="Center" ToolTip="指定生成的主EXE名字" />
                        <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.ExcutableName}" />
                     </DockPanel>
@@ -123,6 +139,39 @@
                         <TextBlock Width="60" DockPanel.Dock="Left" Text="ProductInfoPath：" VerticalAlignment="Center" ToolTip="releaseDate" />
                         <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.ProductInfoPath}" />
                     </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="压缩包名：" VerticalAlignment="Center" ToolTip="压缩包文件名模板，留空使用默认模板。占位符：{Name}=软件名、{Company}=公司名、{yyyyMMdd}={yyyy-MM-dd HHmm} 等任意日期格式" />
+                        <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.FileNameTemplate}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <TextBlock Width="60" DockPanel.Dock="Left" Text="打包后：" VerticalAlignment="Center" ToolTip="打包压缩后执行的动作：校验全签名、拷贝压缩包到本地目录、上传到FTP" />
+                        <Button DockPanel.Dock="Right" Content="后处理配置..." Padding="4,2" Command="{Binding PostActionsCommand}" />
+                        <CheckBox Margin="10,0,0,0" VerticalAlignment="Center" Content="校验全签名" IsChecked="{Binding Path=SelectedItem.VerifySign}" />
+                    </DockPanel>
+                    <StackPanel Margin="0,10,0,0">
+                        <CheckBox VerticalAlignment="Center" Content="打包微软商店（msi）" IsChecked="{Binding Path=SelectedItem.PackageMsi}" ToolTip="压缩后：目标路径 → Msi源目录（完全覆盖，保留track.txt）→ AIP设置版本 → 默认构建" />
+                        <StackPanel Style="{StaticResource MsiSettingsPanel}" Margin="26,8,0,0">
+                            <DockPanel>
+                                <TextBlock Width="100" DockPanel.Dock="Left" Text="版本号：" VerticalAlignment="Center" ToolTip="写入AIP工程的版本号，如 1.2.3；留空则跳过设置版本" />
+                                <TextBox MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.MsiVersion}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,8,0,0">
+                                <TextBlock Width="100" DockPanel.Dock="Left" Text="Msi源文件夹：" VerticalAlignment="Center" ToolTip="AIP打包的源目录。同步时完全覆盖为目标路径内容并清除多余文件，但保留该目录根下的 track.txt。注意：AIP构建输出不要放在此目录内，否则会被下次同步清除" />
+                                <Button DockPanel.Dock="Right" Content="选择" Padding="4,2" Command="{Binding SelectMsiSourceCommand}" />
+                                <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.MsiSourcePath}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,8,0,0">
+                                <TextBlock Width="100" DockPanel.Dock="Left" Text="AIP工程路径：" VerticalAlignment="Center" ToolTip="Advanced Installer 工程文件(.aip)路径" />
+                                <Button DockPanel.Dock="Right" Content="选择" Padding="4,2" Command="{Binding SelectMsiAipCommand}" />
+                                <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.MsiAipPath}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,8,0,0">
+                                <TextBlock Width="100" DockPanel.Dock="Left" Text="AI工具路径：" VerticalAlignment="Center" ToolTip="AdvancedInstaller.com 完整路径（位于 Advanced Installer 安装目录 bin\x86 下）" />
+                                <Button DockPanel.Dock="Right" Content="选择" Padding="4,2" Command="{Binding SelectMsiToolCommand}" />
+                                <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding Path=SelectedItem.MsiToolPath}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </StackPanel>
                     <Grid   Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -140,9 +189,15 @@
                             <TextBlock   Text="{Binding SelectedItem.ProtecterName}"  />
                         </DockPanel>
                     </Grid>
-                    <StackPanel Orientation="Horizontal">
-                        <Button Margin="0,10,0,0" MinHeight="30" Content="保存配置" Padding="6,4" Command="{Binding SaveConfigCommand}" />
-                        <Button Margin="0,10,0,0" MinHeight="30" Content="重新压缩" Padding="6,4" Command="{Binding ReCompressCommand}" />
+                    <StackPanel Margin="0,10,0,0">
+                        <DockPanel>
+                            <TextBlock Width="60" DockPanel.Dock="Left" Text="默认模板：" VerticalAlignment="Center" ToolTip="单项压缩包名为空时使用的全局默认模板。占位符：{Name}=软件名、{Company}=公司名、{yyyyMMdd} 等任意日期格式" />
+                            <TextBox Margin="10,0" MinHeight="24" VerticalContentAlignment="Center" Text="{Binding NameTemplate}" />
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button MinHeight="30" Content="保存配置" Padding="6,4" Command="{Binding SaveConfigCommand}" />
+                            <Button MinHeight="30" Margin="10,0,0,0" Content="重新压缩" Padding="6,4" Command="{Binding ReCompressCommand}" />
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
                 <TextBox Grid.Column="2" Grid.Row="2" Margin="0,10,10,0" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Focusable="False" Text="{Binding ErrorText}" />

@@ -48,7 +48,7 @@ namespace SignatureTool2.Utilites.Sign
                 {
                     break;
                 }
-                if (_isSkip)
+                if (_isSkip || RunControl.Token.IsCancellationRequested)
                 {
                     semaphoreTool.SkipThread();
                     break;
@@ -86,7 +86,11 @@ namespace SignatureTool2.Utilites.Sign
             {
                 while (!_isInputedPasscode)
                 {
-                    Thread.Sleep(500);
+                    if (RunControl.Token.IsCancellationRequested || IsAllSkip)
+                    {
+                        return -4;
+                    }
+                    Thread.Sleep(200);
                 }
                 _isInputedPasscode = false;
             }
@@ -97,6 +101,11 @@ namespace SignatureTool2.Utilites.Sign
         {
             if (IsAllSkip)
             {
+                return -4;
+            }
+            if (RunControl.Token.IsCancellationRequested)
+            {
+                model.SignResult = SignResultEnum.NotSet;
                 return -4;
             }
             int flag = 0;
@@ -155,7 +164,7 @@ namespace SignatureTool2.Utilites.Sign
                     if (flag == -2)
                     {
                         var company = CompanyTool.Instance.GetCompanyBySha1(model.sha1);
-                        Trace.TraceInformation("signature <" + model.FilePath.GetFileName() + $"> Failed!δ��⵽<{company.Name}>��key��");
+                        Trace.TraceInformation("signature <" + model.FilePath.GetFileName() + $"> Failed!δ��⵽<{company.Name}>��key��");
                     }
                 }
             }
@@ -212,7 +221,6 @@ namespace SignatureTool2.Utilites.Sign
 
         private string Signature(string argument)
         {
-            string text = "";
             try
             {
                 ProcessStartInfo processStartInfo = new ProcessStartInfo();
@@ -227,9 +235,19 @@ namespace SignatureTool2.Utilites.Sign
                 CancellationTokenSource cts = new CancellationTokenSource();
                 System.Threading.Tasks.Task.Run(() => CheckInputWindow(cts.Token));
                 process.Start();
-                var error = process.StandardError.ReadToEnd();
-                var output =process.StandardOutput.ReadToEnd();
+                RunControl.Track(process);
+                // 两个输出流同时异步读取，避免单个流先读导致缓冲区写满的死锁
+                var errorTask = process.StandardError.ReadToEndAsync();
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                process.WaitForExit();
+                RunControl.Untrack(process);
                 cts.Cancel();
+                string output = outputTask.Result;
+                string error = errorTask.Result;
+                if (RunControl.Token.IsCancellationRequested)
+                {
+                    Trace.TraceWarning("签名<" + process.Id + ">已被停止");
+                }
                 return error + output;
             }
             catch (Exception ex)
@@ -238,26 +256,40 @@ namespace SignatureTool2.Utilites.Sign
             }
         }
 
-        private static bool GetIsSigned(string filePath)
+        /// <summary>检查文件是否已签名且带时间戳。</summary>
+        public static bool GetIsSigned(string filePath)
         {
+            string text = "";
+            text = AppDomain.CurrentDomain.BaseDirectory.Combine("signtool.exe");
+            if (!text.IsExistsFile())
+            {
+                Trace.TraceInformation("<\"signtool.exe\"> is not exists");
+                return false;
+            }
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
-            string text = "";
-            text = AppDomain.CurrentDomain.BaseDirectory.Combine("signtool.exe");
             startInfo.FileName = "cmd.exe";
-            startInfo.Arguments = $"/c {text} verify  /v " + filePath;
+            startInfo.Arguments = $"/c \"{text}\" verify /v \"{filePath}\"";
             startInfo.UseShellExecute = false;
             startInfo.CreateNoWindow = true;
 
-            Process process = new Process();
-            process.StartInfo = startInfo;
-            process.EnableRaisingEvents = true;
-            process.Start();
-            process.WaitForExit();
-            string output = process.StandardOutput.ReadToEnd();
-
-            return output.Contains("Signing Certificate Chain:")&&!output.Contains("File is not timestamped.");
+            using (Process process = new Process())
+            {
+                process.StartInfo = startInfo;
+                process.Start();
+                // 先异步读输出再等退出：先 WaitForExit 会在输出缓冲区写满时死锁
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                var errorTask = process.StandardError.ReadToEndAsync();
+                if (!process.WaitForExit(30000))
+                {
+                    RunControl.KillTree(process);
+                    Trace.TraceWarning($"verify<{filePath.GetFileName()}> 30秒未返回，已终止");
+                    return false;
+                }
+                string output = outputTask.Result + errorTask.Result;
+                return output.Contains("Signing Certificate Chain:") && !output.Contains("File is not timestamped.");
+            }
         }
 
         public static bool CheckKey(string company)
@@ -285,7 +317,7 @@ namespace SignatureTool2.Utilites.Sign
                 {
                     await System.Threading.Tasks.Task.Delay(500);
                     if (token.IsCancellationRequested) break;
-                    var window = Utilities.WindowForm.NewWindow("�豸��¼");
+                    var window = Utilities.WindowForm.NewWindow("�豸��¼");
                     if (window == null) window = Utilities.WindowForm.NewWindow("Token Logon");
                     if (window == null)
                     {

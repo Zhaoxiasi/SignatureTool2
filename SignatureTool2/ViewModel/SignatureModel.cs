@@ -39,6 +39,202 @@ namespace SignatureTool2.ViewModel
 
 		public bool IsNew { get; set; } = true;
 
+		private string statusText;
+
+		/// <summary>本次运行状态（构建失败/签名成功等），不持久化。</summary>
+		public string StatusText
+		{
+			get
+			{
+				return statusText;
+			}
+			set
+			{
+				if (SetProperty(ref statusText, value, "StatusText"))
+				{
+					RaisePropertyChanged("DisplayName");
+				}
+			}
+		}
+
+		/// <summary>列表项显示名：名称 + 状态后缀。</summary>
+		public string DisplayName => string.IsNullOrEmpty(StatusText) ? SoftwareName : $"{SoftwareName}（{StatusText}）";
+
+		private string syncMode = "增量";
+
+		/// <summary>同步模式：“增量”=只拷贝新文件；“严格同步”=全量拷贝并清理目标目录多余文件。</summary>
+		public string SyncMode
+		{
+			get
+			{
+				return syncMode;
+			}
+			set
+			{
+				SetProperty(ref syncMode, value, "SyncMode");
+			}
+		}
+
+		/// <summary>严格同步时用户勾选保留的文件（不持久化）。</summary>
+		public HashSet<string> SyncKeepFiles { get; set; }
+
+		/// <summary>是否严格同步模式。</summary>
+		public bool IsStrictSync => "严格同步".Equals(SyncMode, StringComparison.Ordinal);
+
+		private string fileNameTemplate = "";
+
+		/// <summary>压缩包文件名模板；留空使用全局默认模板。</summary>
+		public string FileNameTemplate
+		{
+			get
+			{
+				return fileNameTemplate;
+			}
+			set
+			{
+				SetProperty(ref fileNameTemplate, value, "FileNameTemplate");
+			}
+		}
+
+		private bool verifySign;
+
+		/// <summary>打包后是否校验目标目录全部已签名。</summary>
+		public bool VerifySign
+		{
+			get
+			{
+				return verifySign;
+			}
+			set
+			{
+				SetProperty(ref verifySign, value, "VerifySign");
+			}
+		}
+
+		private bool packageMsi;
+
+		/// <summary>是否在压缩后执行微软商店(MSI)打包：同步目标目录到Msi源目录 → AIP设版本 → 默认构建。</summary>
+		public bool PackageMsi
+		{
+			get
+			{
+				return packageMsi;
+			}
+			set
+			{
+				SetProperty(ref packageMsi, value, "PackageMsi");
+			}
+		}
+
+		private string msiVersion = "";
+
+		/// <summary>写入 AIP 工程的版本号，如 1.2.3；留空则跳过设置版本。</summary>
+		public string MsiVersion
+		{
+			get
+			{
+				return msiVersion;
+			}
+			set
+			{
+				SetProperty(ref msiVersion, value, "MsiVersion");
+			}
+		}
+
+		private string msiSourcePath = "";
+
+		/// <summary>Msi源文件夹路径：目标路径内容完全同步到此（保留track.txt），AIP基于此目录打包。</summary>
+		public string MsiSourcePath
+		{
+			get
+			{
+				return msiSourcePath;
+			}
+			set
+			{
+				SetProperty(ref msiSourcePath, value, "MsiSourcePath");
+			}
+		}
+
+		private string msiAipPath = "";
+
+		/// <summary>Advanced Installer 工程文件(.aip)路径。</summary>
+		public string MsiAipPath
+		{
+			get
+			{
+				return msiAipPath;
+			}
+			set
+			{
+				SetProperty(ref msiAipPath, value, "MsiAipPath");
+			}
+		}
+
+		private string msiToolPath = "";
+
+		/// <summary>AdvancedInstaller.com 完整路径。</summary>
+		public string MsiToolPath
+		{
+			get
+			{
+				return msiToolPath;
+			}
+			set
+			{
+				SetProperty(ref msiToolPath, value, "MsiToolPath");
+			}
+		}
+
+		private string copyTargets = "";
+
+		/// <summary>打包后拷贝压缩包到本地目录，每行一个。</summary>
+		public string CopyTargets
+		{
+			get
+			{
+				return copyTargets;
+			}
+			set
+			{
+				SetProperty(ref copyTargets, value, "CopyTargets");
+			}
+		}
+
+		private string ftpTargets = "";
+
+		/// <summary>打包后上传压缩包的 FTP 地址，每行一个，支持 ftp://user:pass@host/path。</summary>
+		public string FtpTargets
+		{
+			get
+			{
+				return ftpTargets;
+			}
+			set
+			{
+				SetProperty(ref ftpTargets, value, "FtpTargets");
+			}
+		}
+
+		/// <summary>拆分多行配置为非空行列表。</summary>
+		public List<string> SplitTargets(string multiline)
+		{
+			List<string> result = new List<string>();
+			if (string.IsNullOrWhiteSpace(multiline))
+			{
+				return result;
+			}
+			foreach (string line in multiline.Replace("\r\n", "\n").Split('\n'))
+			{
+				string trimmed = line.Trim();
+				if (trimmed.Length > 0)
+				{
+					result.Add(trimmed);
+				}
+			}
+			return result;
+		}
+
 
 		public string SoftwareName
 		{
@@ -48,7 +244,10 @@ namespace SignatureTool2.ViewModel
 			}
 			set
 			{
-				SetProperty(ref softwareName, value, "SoftwareName");
+				if (SetProperty(ref softwareName, value, "SoftwareName"))
+				{
+					RaisePropertyChanged("DisplayName");
+				}
 			}
 		}
 

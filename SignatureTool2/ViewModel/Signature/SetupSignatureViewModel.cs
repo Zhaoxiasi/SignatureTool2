@@ -420,7 +420,17 @@ namespace SignatureTool2.ViewModel.Signature
             FolderTool.DeleteFolder(model.WpfOutPutPath);
 
             var compiler = CompilerTool.Instance.GetCompilerByID(model.CompilerID);
-            SlnBuild.Build(model.CreateBuildArg(), Path.GetDirectoryName(compiler.vsBuilderPath.Trim('\"')));
+            if (compiler == null || compiler.vsBuilderPath.IsNullOrEmpty())
+            {
+                Trace.TraceError("<" + model.Name + ">未配置编译器，无法构建，已跳过！");
+                return false;
+            }
+            bool buildSuccess = SlnBuild.Build(model.CreateBuildArg(), Path.GetDirectoryName(compiler.vsBuilderPath.Trim('\"')));
+            if (!buildSuccess)
+            {
+                Trace.TraceError("构建<" + model.Name + ">失败，已跳过安装包/卸载包生成！");
+                return false;
+            }
             string installexePath = Path.Combine(model.WpfOutPutPath, "setup.exe");
             string uninstallexePath = Path.Combine(model.WpfOutPutPath, "uninstall.exe");
             if (installexePath.IsExistsFile() && uninstallexePath.IsExistsFile())

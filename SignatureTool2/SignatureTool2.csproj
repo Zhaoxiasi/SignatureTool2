@@ -148,6 +148,7 @@
     <Compile Include="Utilites\Log\LogTool.cs" />
     <Compile Include="Utilites\Plist\PlistTool.cs" />
     <Compile Include="Utilites\SemaphoreTool.cs" />
+    <Compile Include="Utilites\RunControl.cs" />
     <Compile Include="Utilites\Sign\SignatureTool.cs" />
     <Compile Include="Utilites\Sign\SignModel.cs" />
     <Compile Include="Utilites\Sign\SignResultEnum.cs" />
@@ -155,6 +156,13 @@
     <Compile Include="Utilites\Zip\Com7zHelper.cs" />
     <Compile Include="ViewModelBase.cs" />
     <Compile Include="ViewModel\CopyFileModel.cs" />
+    <Compile Include="ViewModel\SyncCleanItem.cs" />
+    <Compile Include="View\SyncCleanDialog.xaml.cs">
+      <DependentUpon>SyncCleanDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\PostActionsDialog.xaml.cs">
+      <DependentUpon>PostActionsDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ViewModel\SelectFileSignatureViewModel.cs" />
     <Compile Include="ViewModel\SettingViewModel.cs" />
     <Compile Include="ViewModel\Setting\CompanySettingViewModel.cs" />
@@ -209,6 +217,14 @@
     <Page Include="View\SelectFileSignatureView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\SyncCleanDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\PostActionsDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\SettingView.xaml">
       <Generator>MSBuild:Compile</Generator>

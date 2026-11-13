@@ -24,7 +24,7 @@ namespace SignatureTool2.Utilites.Zip
             else
             { result = true; }
 
-            if (File.Exists(strOutFilePath))
+            if (!RunControl.Token.IsCancellationRequested && File.Exists(strOutFilePath))
             { result = true; }
             return result;
         }
@@ -38,6 +38,11 @@ namespace SignatureTool2.Utilites.Zip
             { return result; }
             else
             {
+                if (RunControl.Token.IsCancellationRequested)
+                {
+                    Trace.TraceWarning("压缩已取消。");
+                    return result;
+                }
                 ProcessStartInfo oInfo = new ProcessStartInfo();
                 oInfo.FileName = exePath;
                 oInfo.Arguments = arguments;
@@ -68,9 +73,16 @@ namespace SignatureTool2.Utilites.Zip
                         //Trace.WriteLine();
                     };
                     proc.Start();
+                    RunControl.Track(proc);
                     proc.BeginOutputReadLine();
                     proc.WaitForExit();
-                     result = true;
+                    RunControl.Untrack(proc);
+                    if (RunControl.Token.IsCancellationRequested)
+                    {
+                        Trace.TraceWarning("压缩已停止。");
+                        return false;
+                    }
+                     result = proc.ExitCode == 0;
 
                     Trace.WriteLine("打包完成！", "Transfer");
                 }
@@ -84,7 +96,8 @@ namespace SignatureTool2.Utilites.Zip
         {
             try
             {
-                Process[] processArr = Process.GetProcessesByName("7z.exe");
+                // 进程名不带 .exe 扩展名
+                Process[] processArr = Process.GetProcessesByName("7z");
                 if (processArr != null && processArr.Count() > 0)
                 {
                     foreach (Process item in processArr)

@@ -182,6 +182,8 @@ namespace SignatureTool2.ViewModel
             {
                 sign.StopThread();
             }
+            // 立即终止签名子进程
+            RunControl.Stop();
         }
 
         private void OnSignCommand(string pa)
@@ -238,47 +240,66 @@ namespace SignatureTool2.ViewModel
             //}
             LoadingVisibility = Visibility.Visible;
             Trace.TraceInformation($"signature total {li.Count} file(s)");
+            RunControl.Start();
             new Thread((ThreadStart)delegate
             {
                 int successCount = 0;
                 int currentCount = 0;
                 int totalCount = li.Count;
-                SemaphoreTool semaphoreTool = new SemaphoreTool(li.Count, 5);
-                foreach (SignFileModel item in li)
+                try
                 {
-                    if (_isSkip)
+                    SemaphoreTool semaphoreTool = new SemaphoreTool(li.Count, 5);
+                    foreach (SignFileModel item in li)
                     {
-                        semaphoreTool.SkipThread();
-                        break;
+                        if (_isSkip || RunControl.Token.IsCancellationRequested)
+                        {
+                            semaphoreTool.SkipThread();
+                            break;
+                        }
+                        semaphoreTool.InvokeByTask(delegate (object par)
+                        {
+                            if (_isSkip || RunControl.Token.IsCancellationRequested)
+                            {
+                                return;
+                            }
+                            SignFileModel signFileModel = (SignFileModel)par;
+                            SignatureTool signatureTool = new SignatureTool();
+                            _signList.Enqueue(signatureTool);
+                            SignModel model = new SignModel
+                            {
+                                FilePath = signFileModel.FilePath,
+                                sha1 = SignSha1
+                            };
+                            int num = signatureTool.SignatureFile(model);
+                            Interlocked.Increment(ref currentCount);
+                            SignTip = $"{currentCount}/{totalCount}";
+                            if (num == 1)
+                            {
+                                Interlocked.Increment(ref successCount);
+                                signFileModel.SignStatus = "成功！";
+                            }
+                            else
+                            {
+                                signFileModel.SignStatus = "签名失败！";
+                            }
+                        }, item);
                     }
-                    semaphoreTool.InvokeByTask(delegate (object par)
+                    semaphoreTool.WaitAllFinish();
+                    if (_isSkip || RunControl.Token.IsCancellationRequested)
                     {
-                        SignFileModel signFileModel = (SignFileModel)par;
-                        SignatureTool signatureTool = new SignatureTool();
-                        _signList.Enqueue(signatureTool);
-                        SignModel model = new SignModel
-                        {
-                            FilePath = signFileModel.FilePath,
-                            sha1 = SignSha1
-                        };
-                        int num = signatureTool.SignatureFile(model);
-                        Interlocked.Increment(ref currentCount);
-                        SignTip = $"{currentCount}/{totalCount}";
-                        if (num == 1)
-                        {
-                            Interlocked.Increment(ref successCount);
-                            signFileModel.SignStatus = "成功！";
-                        }
-                        else
-                        {
-                            signFileModel.SignStatus = "签名失败！";
-                        }
-                    }, item);
+                        Trace.TraceWarning("本次签名已停止！");
+                    }
+                    else
+                    {
+                        Trace.TraceInformation($"所有签名完成，总共{li.Count}项，成功{successCount}项，失败{li.Count - successCount}项！");
+                    }
                 }
-                semaphoreTool.WaitAllFinish();
-                IsEnabled = true;
-                LoadingVisibility = Visibility.Collapsed;
-                Trace.TraceInformation($"所有签名完成，总共{li.Count}项，成功{successCount}项，失败{li.Count - successCount}项！");
+                finally
+                {
+                    RunControl.End();
+                    IsEnabled = true;
+                    LoadingVisibility = Visibility.Collapsed;
+                }
             }).Start();
         }
 

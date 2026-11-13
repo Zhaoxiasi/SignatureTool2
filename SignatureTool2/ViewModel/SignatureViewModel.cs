@@ -7,7 +7,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
@@ -135,6 +137,21 @@ namespace SignatureTool2.ViewModel
             }
         }
 
+        private string nameTemplate = "";
+
+        /// <summary>全局默认压缩包名模板；留空时单项也留空则沿用原 TargetPath 替换规则。</summary>
+        public string NameTemplate
+        {
+            get
+            {
+                return nameTemplate;
+            }
+            set
+            {
+                SetProperty(ref nameTemplate, value, "NameTemplate");
+            }
+        }
+
         public ObservableCollection<SignatureModel> FileList { get; }
 
         public ObservableCollection<ProtecterModel> ProtecterList { get; }
@@ -147,10 +164,18 @@ namespace SignatureTool2.ViewModel
         public ICommand SaveConfigCommand { get; set; }
         public ICommand ReCompressCommand { get; set; }
 
+        public ICommand PostActionsCommand { get; set; }
+
         public ICommand SelectSourcePathCommand { get; set; }
 
         public ICommand SelectTargetPathCommand { get; set; }
         public ICommand SelectProtectPathCommand { get; set; }
+
+        public ICommand SelectMsiSourceCommand { get; set; }
+
+        public ICommand SelectMsiAipCommand { get; set; }
+
+        public ICommand SelectMsiToolCommand { get; set; }
         
 
         public SignatureViewModel()
@@ -160,16 +185,53 @@ namespace SignatureTool2.ViewModel
             DeleteCommand = new DelegateCommand(OnDeleteCommand);
             SaveConfigCommand = new DelegateCommand(OnSaveConfigCommand);
             ReCompressCommand = new DelegateCommand(OnReCompressCommand);
+            PostActionsCommand = new DelegateCommand(OnPostActionsCommand);
             SelectSourcePathCommand = new DelegateCommand(OnSelectSourcePathCommand);
             SelectTargetPathCommand = new DelegateCommand(OnSelectTargetPathCommand);
             SelectProtectPathCommand = new DelegateCommand(OnSelectProtectPathCommand);
+            SelectMsiSourceCommand = new DelegateCommand(OnSelectMsiSourceCommand);
+            SelectMsiAipCommand = new DelegateCommand(OnSelectMsiAipCommand);
+            SelectMsiToolCommand = new DelegateCommand(OnSelectMsiToolCommand);
             SignCommand = new DelegateCommand(OnSignCommand);
             StopCommand = new DelegateCommand(OnStopCommand);
             FileList = new ObservableCollection<SignatureModel>();
             ProtecterList = new ObservableCollection<ProtecterModel>();
             CompanyList = new ObservableCollection<CompanyModel>();
+            FileList.CollectionChanged += OnFileListChanged;
+            _isLoadingConfig = true;
             ReadConfig();
+            _isLoadingConfig = false;
             LogTool.Instance.WriteLogEventAdvance += Instance_WriteLogEventAdvance;
+        }
+
+        /// <summary>加载配置期间抑制自动保存，避免半初始化状态写盘。</summary>
+        private bool _isLoadingConfig;
+
+        /// <summary>修改即自动保存到 config.plist 的字段。</summary>
+        private static readonly HashSet<string> AutoSaveProperties = new HashSet<string>
+        {
+            "PackageMsi", "MsiVersion", "MsiSourcePath", "MsiAipPath", "MsiToolPath"
+        };
+
+        private void OnFileListChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (e.NewItems == null)
+            {
+                return;
+            }
+            foreach (SignatureModel item in e.NewItems)
+            {
+                item.PropertyChanged += OnItemSettingChanged;
+            }
+        }
+
+        private void OnItemSettingChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (_isLoadingConfig || !AutoSaveProperties.Contains(e.PropertyName))
+            {
+                return;
+            }
+            SaveConfig();
         }
 
 
@@ -205,6 +267,8 @@ namespace SignatureTool2.ViewModel
             {
                 sign.StopThread();
             }
+            // 立即终止构建/签名/压缩子进程
+            RunControl.Stop();
         }
 
         private void OnSignCommand()
@@ -272,6 +336,48 @@ namespace SignatureTool2.ViewModel
             }
         }
 
+        private void OnSelectMsiSourceCommand()
+        {
+            if (CheckHasData())
+            {
+                string text = ChooseDialogTool.OpenSelectFolderDialog();
+                if (!text.IsNullOrEmpty())
+                {
+                    SelectedItem.MsiSourcePath = text;
+                }
+            }
+        }
+
+        private void OnSelectMsiAipCommand()
+        {
+            if (CheckHasData())
+            {
+                (string, string) filter = default((string, string));
+                filter.Item1 = "Advanced Installer工程";
+                filter.Item2 = "*.aip";
+                string text = ChooseDialogTool.OpenSelectFileDialog(filter, false);
+                if (!text.IsNullOrEmpty())
+                {
+                    SelectedItem.MsiAipPath = text;
+                }
+            }
+        }
+
+        private void OnSelectMsiToolCommand()
+        {
+            if (CheckHasData())
+            {
+                (string, string) filter = default((string, string));
+                filter.Item1 = "AdvancedInstaller.com";
+                filter.Item2 = "AdvancedInstaller.com";
+                string text = ChooseDialogTool.OpenSelectFileDialog(filter, false);
+                if (!text.IsNullOrEmpty())
+                {
+                    SelectedItem.MsiToolPath = text;
+                }
+            }
+        }
+
         private void OnSaveConfigCommand()
         {
 
@@ -286,7 +392,7 @@ namespace SignatureTool2.ViewModel
                 {
 
                     Com7zHelper com7 = new Com7zHelper();
-                string targeFileName = SelectedItem.TargetPath.GetFileName().Replace("custom", $"{DateTime.Now.Date.ToString("yyyyMMdd")}.7z");
+                string targeFileName = BuildArchiveName(SelectedItem, ".7z");
                 string filepath = Path.Combine(Path.GetDirectoryName(SelectedItem.TargetPath), targeFileName);
                 if (filepath.IsExistsFile())
                 {
@@ -294,10 +400,21 @@ namespace SignatureTool2.ViewModel
                 }
                 com7.CompressDirectory(SelectedItem.TargetPath, filepath, "7z");
                 Trace.TraceInformation($"打包<{targeFileName}>完成！");
+                RunPostActions(SelectedItem, filepath);
                 Process.Start("explorer.exe", $"/select,\"{filepath}\"");
                 }).Start();
             }
         }
+        private void OnPostActionsCommand()
+        {
+            if (SelectedItem == null)
+            {
+                TipsTool.OpenTipsWindow("请先选择一个软件项！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            View.PostActionsDialog.Show(SelectedItem);
+        }
+
         private void OnDeleteCommand()
         {
             List<SignatureModel> list = FileList.ToList().FindAll((SignatureModel p) => p.IsSelected);
@@ -357,6 +474,16 @@ namespace SignatureTool2.ViewModel
                         ProtecterID = dictionary.GetValue<string>("ProtecterID"),
                         ProtecterName= dictionary.GetValue<string>("ProtecterName"),
                         ProtectProject = dictionary.GetValue<string>("ProtectProject"),
+                        SyncMode = string.IsNullOrWhiteSpace(dictionary.GetValue<string>("SyncMode")) ? "增量" : dictionary.GetValue<string>("SyncMode"),
+                        FileNameTemplate = dictionary.GetValue<string>("FileNameTemplate") ?? "",
+                        VerifySign = string.Equals(dictionary.GetValue<string>("VerifySign"), "True", StringComparison.OrdinalIgnoreCase),
+                        PackageMsi = string.Equals(dictionary.GetValue<string>("PackageMsi"), "True", StringComparison.OrdinalIgnoreCase),
+                        MsiVersion = dictionary.GetValue<string>("MsiVersion") ?? "",
+                        MsiSourcePath = dictionary.GetValue<string>("MsiSourcePath") ?? "",
+                        MsiAipPath = dictionary.GetValue<string>("MsiAipPath") ?? "",
+                        MsiToolPath = dictionary.GetValue<string>("MsiToolPath") ?? "",
+                        CopyTargets = dictionary.GetValue<string>("CopyTargets") ?? "",
+                        FtpTargets = dictionary.GetValue<string>("FtpTargets") ?? "",
                     };
 
                     item.SelectProtecterCommand = new DelegateCommand<SignatureModel>(OnSelectProtecter);
@@ -370,6 +497,11 @@ namespace SignatureTool2.ViewModel
             }
             IOrderedEnumerable<SignatureModel> items = li.OrderBy((SignatureModel p) => p.SoftwareName);
             FileList.AddRange(items);
+            string template = ConfigTool.Instance.GetValveOfRoot<string>(CRootKey.Package_NameTemplate);
+            if (!string.IsNullOrWhiteSpace(template))
+            {
+                NameTemplate = template;
+            }
         }
 
         private void OnSelectProtecter(SignatureModel model)
@@ -490,14 +622,14 @@ namespace SignatureTool2.ViewModel
                 return;
             }
             List<object> list = new List<object>();
-            foreach (SignatureModel file in FileList)
-            {
-                if (!file.IsAvailable)
+                foreach (SignatureModel file in FileList)
                 {
-                    Trace.TraceWarning("<" + file.SoftwareName + ">'s is not available, please check the selecte path");
-                    continue;
-                }
-                file.IsNew = false;
+                    if (!file.IsAvailable)
+                    {
+                        // 仅提示，不丢弃：路径缺失的项也要保留在配置中，避免换机器/改路径时数据丢失
+                        Trace.TraceWarning("<" + file.SoftwareName + ">'s is not available, please check the selecte path");
+                    }
+                    file.IsNew = false;
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
                 dictionary.Add("SoftwareName", file.SoftwareName);
                 dictionary.Add("SourcePath", file.SourcePath);
@@ -512,8 +644,19 @@ namespace SignatureTool2.ViewModel
                 dictionary.Add("ProtecterID", file.ProtecterID??"");
                 dictionary.Add("ProtecterName", file.ProtecterName??"");
                 dictionary.Add("ProtectProject", file.ProtectProject ?? "");
+                dictionary.Add("SyncMode", file.SyncMode ?? "增量");
+                dictionary.Add("FileNameTemplate", file.FileNameTemplate ?? "");
+                dictionary.Add("VerifySign", file.VerifySign.ToString());
+                dictionary.Add("PackageMsi", file.PackageMsi.ToString());
+                dictionary.Add("MsiVersion", file.MsiVersion ?? "");
+                dictionary.Add("MsiSourcePath", file.MsiSourcePath ?? "");
+                dictionary.Add("MsiAipPath", file.MsiAipPath ?? "");
+                dictionary.Add("MsiToolPath", file.MsiToolPath ?? "");
+                dictionary.Add("CopyTargets", file.CopyTargets ?? "");
+                dictionary.Add("FtpTargets", file.FtpTargets ?? "");
                 list.Add(dictionary);
             }
+            ConfigTool.Instance.SetValueOfRoot(CRootKey.Package_NameTemplate, NameTemplate ?? "");
             if (list.Count > 0)
             {
                 ConfigTool.Instance.BackupConfig();
@@ -528,99 +671,552 @@ namespace SignatureTool2.ViewModel
             {
                 return;
             }
+            if (!PrepareStrictSync(li))
+            {
+                clickCount = 0;
+                return;
+            }
             _isSkip = false;
             IsSigning = true;
             IsEnabled = false;
             LoadingVisibility = Visibility.Visible;
+            RunControl.Start();
             new Thread((ThreadStart)delegate
             {
                 int successCount = 0;
-                SemaphoreTool semaphoreTool = new SemaphoreTool(li.Count, 1);
-                foreach (SignatureModel item in li)
+                try
                 {
-
-                    var company = CompanyTool.Instance.GetCompanyByID(item.CompanyID);
-                    if (company != null)
+                    SemaphoreTool semaphoreTool = new SemaphoreTool(li.Count, 1);
+                    foreach (SignatureModel item in li)
                     {
+                        item.StatusText = "";
+                        var company = CompanyTool.Instance.GetCompanyByID(item.CompanyID);
+                        if (company != null && !_isSkip && !RunControl.Token.IsCancellationRequested)
+                        {
 
-                        App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject(company.Password));
-                        Trace.TraceWarning($"{item.SoftwareName}项<{company.Name}>公司的Key密码已复制！");
+                            App.Current.Dispatcher.Invoke(() => Clipboard.SetDataObject(company.Password));
+                            Trace.TraceWarning($"{item.SoftwareName}项<{company.Name}>公司的Key密码已复制！");
+                        }
+                        else if (company == null)
+                        {
+                            Trace.TraceWarning($"{item.SoftwareName}项公司属性未找到！");
+                            continue;
+                        }
+                        semaphoreTool.InvokeByThread(delegate (object par)
+                        {
+                            if (_isSkip || RunControl.Token.IsCancellationRequested)
+                            {
+                                return;
+                            }
+                            SignatureModel currentModel = (SignatureModel)par;
+                            if (CopyFile(currentModel))
+                            {
+                                Interlocked.Increment(ref successCount);
+                                currentModel.LastSignTime = DateTime.Now;
+                            }
+                            currentModel.SignModelList = null;
+                        }, "Sign_" + item.SoftwareName, item);
+                    }
+                    semaphoreTool.WaitAllFinish();
+                    SaveConfig();
+                    if (_isSkip || RunControl.Token.IsCancellationRequested)
+                    {
+                        Trace.TraceWarning("本次签名已停止！");
                     }
                     else
                     {
-                        Trace.TraceWarning($"{item.SoftwareName}项公司属性未找到！");
+                        Trace.TraceInformation($"所有签名完成，总共{li.Count}项，成功{successCount}项，失败{li.Count - successCount}项！");
+                        if (successCount > 0)
+                        {
+                            AskCompress(li);
+                        }
+                    }
+                }
+                finally
+                {
+                    RunControl.End();
+                    LoadingVisibility = Visibility.Collapsed;
+                    clickCount = 0;
+                    IsSigning = false;
+                    IsEnabled = true;
+                }
+            }).Start();
+        }
+
+        /// <summary>严格同步预检：列出目标目录多余文件供用户勾选保留；取消的项目从本次运行中移除。</summary>
+        private bool PrepareStrictSync(List<SignatureModel> li)
+        {
+            foreach (SignatureModel item in li.ToList())
+            {
+                if (!item.IsStrictSync)
+                {
+                    continue;
+                }
+                List<string> staleFiles = GetStaleFiles(item);
+                if (staleFiles.Count == 0)
+                {
+                    item.SyncKeepFiles = new HashSet<string>();
+                    continue;
+                }
+                List<string> keepFiles = View.SyncCleanDialog.Show(staleFiles);
+                if (keepFiles == null)
+                {
+                    li.Remove(item);
+                    Trace.TraceWarning("<" + item.SoftwareName + ">严格同步被取消，本次已跳过该项目！");
+                    continue;
+                }
+                item.SyncKeepFiles = new HashSet<string>(keepFiles, StringComparer.OrdinalIgnoreCase);
+            }
+            if (li.Count == 0)
+            {
+                Trace.TraceWarning("所有项目均被取消，本次签名未执行！");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>计算目标目录中“源目录已不存在”的多余文件。</summary>
+        private List<string> GetStaleFiles(SignatureModel model)
+        {
+            List<string> result = new List<string>();
+            string sourcePath = model.SourcePath;
+            string targetPath = model.TargetPath;
+            if (!targetPath.IsExistsFolder() || !sourcePath.IsExistsFolder())
+            {
+                return result;
+            }
+            List<string> allSource = FolderTool.GetAllFiles(sourcePath);
+            HashSet<string> sourceRelative = new HashSet<string>(
+                allSource.Select(p => p.Substring(sourcePath.Length).TrimStart('\\')),
+                StringComparer.OrdinalIgnoreCase);
+            foreach (string targetFile in FolderTool.GetAllFiles(targetPath))
+            {
+                string relative = targetFile.Substring(targetPath.Length).TrimStart('\\');
+                if (!sourceRelative.Contains(relative))
+                {
+                    result.Add(targetFile);
+                }
+            }
+            return result;
+        }
+
+        /// <summary>严格同步：删除目标目录中源目录已不存在的文件（保留用户勾选的），并清理空目录。</summary>
+        private void DeleteStaleFiles(SignatureModel model)
+        {
+            List<string> staleFiles = GetStaleFiles(model);
+            if (staleFiles.Count == 0)
+            {
+                return;
+            }
+            int deleted = 0;
+            foreach (string stale in staleFiles)
+            {
+                if (model.SyncKeepFiles != null && model.SyncKeepFiles.Contains(stale))
+                {
+                    continue;
+                }
+                FileTool.DeleteFile(stale);
+                deleted++;
+            }
+            foreach (string dir in Directory.GetDirectories(model.TargetPath, "*", SearchOption.AllDirectories).OrderByDescending(d => d.Length))
+            {
+                try
+                {
+                    if (!Directory.EnumerateFileSystemEntries(dir).Any())
+                    {
+                        Directory.Delete(dir);
+                    }
+                }
+                catch
+                {
+                }
+            }
+            Trace.TraceInformation($"严格同步<{model.SoftwareName}>：清理{deleted}个多余文件（保留{staleFiles.Count - deleted}个）");
+        }
+
+        /// <summary>
+        /// 按模板生成压缩包文件名。占位符：{Name}=软件名、{Company}=公司名，
+        /// 其余 {xxx} 按日期时间格式解析（如 {yyyyMMdd}、{HHmm}），无法解析的原样保留。
+        /// 单项模板与全局模板均留空时，沿用原有 TargetPath 中 "custom" 替换为日期+后缀的规则（无 "custom" 时回退为 {Name}_{yyyyMMdd}）。
+        /// </summary>
+        private string BuildArchiveName(SignatureModel item, string extension)
+        {
+            string template = item?.FileNameTemplate;
+            if (string.IsNullOrWhiteSpace(template))
+            {
+                template = NameTemplate;
+            }
+            if (string.IsNullOrWhiteSpace(template))
+            {
+                string folderName = item?.TargetPath.GetFileName() ?? "";
+                if (!string.IsNullOrEmpty(folderName) && folderName.Contains("custom"))
+                {
+                    return folderName.Replace("custom", $"{DateTime.Now.Date.ToString("yyyyMMdd")}{extension}");
+                }
+                template = "{Name}_{yyyyMMdd}";
+            }
+            string name = Regex.Replace(template, @"\{([^{}]+)\}", delegate (Match match)
+            {
+                string token = match.Groups[1].Value;
+                if (token.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                {
+                    return item?.SoftwareName ?? "";
+                }
+                if (token.Equals("Company", StringComparison.OrdinalIgnoreCase))
+                {
+                    return item?.Company ?? "";
+                }
+                try
+                {
+                    return DateTime.Now.ToString(token);
+                }
+                catch
+                {
+                    return match.Value;
+                }
+            });
+            foreach (char c in Path.GetInvalidFileNameChars())
+            {
+                name = name.Replace(c, '_');
+            }
+            return name + extension;
+        }
+
+        /// <summary>签名完成后询问并执行 7z/Zip 打包；压缩过程可被“停止”中断。</summary>
+        private void AskCompress(List<SignatureModel> li)
+        {
+            var rl = MessageBox.Show("签名完成！是否打包？[Yes:7z;No:Zip;Cancel:Cancel]", "向导", MessageBoxButton.YesNoCancel);
+            string format = rl == MessageBoxResult.Yes ? "7z" : (rl == MessageBoxResult.No ? "zip" : null);
+            string extension = rl == MessageBoxResult.Yes ? ".7z" : ".zip";
+            foreach (SignatureModel item in li)
+            {
+                if (_isSkip || RunControl.Token.IsCancellationRequested)
+                {
+                    Trace.TraceWarning("打包已停止！");
+                    return;
+                }
+                string archivePath = null;
+                if (format != null)
+                {
+                    string targeFileName = BuildArchiveName(item, extension);
+                    archivePath = Path.Combine(Path.GetDirectoryName(item.TargetPath), targeFileName);
+                    if (archivePath.IsExistsFile())
+                    {
+                        FileTool.DeleteFile(archivePath);
+                    }
+                    com7.CompressDirectory(item.TargetPath, archivePath, format);
+                    Trace.TraceInformation($"打包<{targeFileName}>完成！");
+                    Process.Start("explorer.exe", $"/select,\"{archivePath}\"");
+                }
+                if (item.PackageMsi)
+                {
+                    RunMsiPackage(item);
+                }
+                RunPostActions(item, archivePath);
+            }
+        }
+
+        private static readonly Com7zHelper com7 = new Com7zHelper();
+
+        /// <summary>微软商店(MSI)打包：目标目录完全同步到Msi源目录（保留track.txt）→ AIP设版本 → 默认构建。</summary>
+        private void RunMsiPackage(SignatureModel item)
+        {
+            Trace.TraceInformation("开始微软商店(MSI)打包流程...");
+            if (!SyncToMsiSource(item))
+            {
+                Trace.TraceError("<" + item.SoftwareName + ">Msi源目录同步失败，跳过MSI打包！");
+                return;
+            }
+            if (!item.MsiToolPath.IsExistsFile())
+            {
+                Trace.TraceError("未找到AdvancedInstaller.com <" + item.MsiToolPath + ">，跳过MSI打包！");
+                return;
+            }
+            if (!item.MsiAipPath.IsExistsFile())
+            {
+                Trace.TraceError("未找到AIP工程 <" + item.MsiAipPath + ">，跳过MSI打包！");
+                return;
+            }
+            if (!item.MsiVersion.IsNullOrEmpty())
+            {
+                if (!RunAiCommand(item.MsiToolPath, "/edit \"" + item.MsiAipPath + "\" /SetVersion " + item.MsiVersion.Trim()))
+                {
+                    return;
+                }
+                Trace.TraceInformation("AIP版本已设置为<" + item.MsiVersion.Trim() + ">");
+            }
+            if (RunAiCommand(item.MsiToolPath, "/build \"" + item.MsiAipPath + "\""))
+            {
+                Trace.TraceInformation("MSI默认构建(DefaultBuild)完成！");
+            }
+        }
+
+        /// <summary>把目标目录镜像同步到Msi源目录：全量覆盖，清除多余文件，但保留根目录的track.txt。</summary>
+        private bool SyncToMsiSource(SignatureModel item)
+        {
+            string source = item.TargetPath;
+            string dest = item.MsiSourcePath;
+            if (dest.IsNullOrEmpty())
+            {
+                Trace.TraceError("<" + item.SoftwareName + ">未配置Msi源文件夹路径！");
+                return false;
+            }
+            if (!source.IsExistsFolder())
+            {
+                Trace.TraceError("<" + item.SoftwareName + ">目标路径不存在 <" + source + ">，无法同步Msi源目录！");
+                return false;
+            }
+            try
+            {
+                Directory.CreateDirectory(dest);
+                if (!CopyTree(source, dest))
+                {
+                    return false;
+                }
+                // 清除源目录中不存在的多余文件（track.txt 保留）
+                HashSet<string> sourceRelative = new HashSet<string>(
+                    FolderTool.GetAllFiles(source).Select(p => p.Substring(source.Length).TrimStart('\\')),
+                    StringComparer.OrdinalIgnoreCase);
+                foreach (string file in FolderTool.GetAllFiles(dest))
+                {
+                    if (_isSkip || RunControl.Token.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+                    string relative = file.Substring(dest.Length).TrimStart('\\');
+                    if (relative.Equals("track.txt", StringComparison.OrdinalIgnoreCase))
+                    {
                         continue;
                     }
-                    semaphoreTool.InvokeByThread(delegate (object par)
+                    if (!sourceRelative.Contains(relative))
                     {
-                        SignatureModel currentModel = (SignatureModel)par;
-                        if (CopyFile(currentModel))
-                        {
-                            Interlocked.Increment(ref successCount);
-                            currentModel.LastSignTime = DateTime.Now;
-                        }
-                        currentModel.SignModelList = null;
-                    }, "Sign_" + item.SoftwareName, item);
+                        FileTool.DeleteFile(file);
+                        Trace.TraceInformation("Msi源目录清除多余文件<" + relative + ">");
+                    }
                 }
-                semaphoreTool.WaitAllFinish();
-                SaveConfig();
-                Trace.TraceInformation($"所有签名完成，总共{li.Count}项，成功{successCount}项，失败{li.Count - successCount}项！");
-                if (successCount > 0)
-                {
-                    var rl = MessageBox.Show("签名完成！是否打包？[Yes:7z;No:Zip;Cancel:Cancel]", "向导", MessageBoxButton.YesNoCancel);
-                    Com7zHelper com7 = new Com7zHelper();
-                    if (rl == MessageBoxResult.Yes)
-                    {
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError("同步Msi源目录失败: " + ex.Message);
+                return false;
+            }
+        }
 
-                        foreach (SignatureModel item in li)
-                        {
-                            string targeFileName = item.TargetPath.GetFileName().Replace("custom", $"{DateTime.Now.Date.ToString("yyyyMMdd")}.7z");
-                            string filepath = Path.Combine(Path.GetDirectoryName(item.TargetPath), targeFileName);
-                            if (filepath.IsExistsFile())
-                            {
-                                FileTool.DeleteFile(filepath);
-                            }
-                            com7.CompressDirectory(item.TargetPath, filepath, "7z");
-                            Trace.TraceInformation($"打包<{targeFileName}>完成！");
-                            Process.Start("explorer.exe", $"/select,\"{filepath}\"");
-                        }
-                    }
-                    else if (rl == MessageBoxResult.No)
-                    {
-                        foreach (SignatureModel item in li)
-                        {
-                            string targeFileName = item.TargetPath.GetFileName().Replace("custom", $"{DateTime.Now.Date.ToString("yyyyMMdd")}.zip");
-                            string filepath = Path.Combine(Path.GetDirectoryName(item.TargetPath), targeFileName);
-                            if (filepath.IsExistsFile())
-                            {
-                                FileTool.DeleteFile(filepath);
-                            }
-                            com7.CompressDirectory(item.TargetPath, filepath, "zip");
-                            Trace.TraceInformation($"打包<{targeFileName}>完成！");
-                            Process.Start("explorer.exe", $"/select,\"{filepath}\"");
-                        }
-                    }
+        /// <summary>递归拷贝目录（覆盖已存在文件）。</summary>
+        private bool CopyTree(string sourceDir, string destDir)
+        {
+            Directory.CreateDirectory(destDir);
+            foreach (string file in Directory.GetFiles(sourceDir))
+            {
+                if (_isSkip || RunControl.Token.IsCancellationRequested)
+                {
+                    return false;
                 }
-                LoadingVisibility = Visibility.Collapsed;
-                clickCount = 0;
-                IsSigning = false;
-                IsEnabled = true;
-            }).Start();
+                File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), true);
+            }
+            foreach (string dir in Directory.GetDirectories(sourceDir))
+            {
+                if (_isSkip || RunControl.Token.IsCancellationRequested)
+                {
+                    return false;
+                }
+                if (!CopyTree(dir, Path.Combine(destDir, Path.GetFileName(dir))))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>执行 AdvancedInstaller.com 命令；支持通过"停止"终止，返回是否成功。</summary>
+        private bool RunAiCommand(string toolPath, string arguments)
+        {
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = toolPath,
+                    Arguments = arguments,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                using (Process process = Process.Start(psi))
+                {
+                    RunControl.Track(process);
+                    System.Threading.Tasks.Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                    System.Threading.Tasks.Task<string> errorTask = process.StandardError.ReadToEndAsync();
+                    while (!process.WaitForExit(200))
+                    {
+                        if (_isSkip || RunControl.Token.IsCancellationRequested)
+                        {
+                            RunControl.KillTree(process);
+                            Trace.TraceWarning("MSI打包命令已终止: " + arguments);
+                            return false;
+                        }
+                    }
+                    RunControl.Untrack(process);
+                    string output = (outputTask.Result + errorTask.Result).Trim();
+                    if (process.ExitCode != 0)
+                    {
+                        Trace.TraceError("AdvancedInstaller命令失败(" + arguments + "): " + output);
+                        return false;
+                    }
+                    if (!output.IsNullOrEmpty())
+                    {
+                        Trace.TraceInformation(output);
+                    }
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError("执行AdvancedInstaller命令异常: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>打包后动作流水线：校验全签名 → 本地拷贝 → FTP 上传。</summary>
+        private void RunPostActions(SignatureModel item, string archivePath)
+        {
+            if (item == null)
+            {
+                return;
+            }
+            if (item.VerifySign)
+            {
+                VerifyAllSigned(item);
+            }
+            if (archivePath == null || !archivePath.IsExistsFile())
+            {
+                if (item.CopyTargets != null && item.SplitTargets(item.CopyTargets).Count > 0
+                    || item.FtpTargets != null && item.SplitTargets(item.FtpTargets).Count > 0)
+                {
+                    Trace.TraceWarning("<" + item.SoftwareName + ">未生成压缩包，跳过拷贝与上传！");
+                }
+                return;
+            }
+            // 本地目录拷贝
+            foreach (string dir in item.SplitTargets(item.CopyTargets))
+            {
+                if (_isSkip || RunControl.Token.IsCancellationRequested)
+                {
+                    return;
+                }
+                try
+                {
+                    Directory.CreateDirectory(dir);
+                    string targetFile = Path.Combine(dir, Path.GetFileName(archivePath));
+                    File.Copy(archivePath, targetFile, true);
+                    Trace.TraceInformation($"已拷贝<{Path.GetFileName(archivePath)}>到<{dir}>");
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceError($"拷贝到<{dir}>失败: {ex.Message}");
+                }
+            }
+            // FTP 上传
+            foreach (string ftpUrl in item.SplitTargets(item.FtpTargets))
+            {
+                if (_isSkip || RunControl.Token.IsCancellationRequested)
+                {
+                    return;
+                }
+                UploadToFtp(archivePath, ftpUrl);
+            }
+        }
+
+        /// <summary>校验目标目录内所有可签名文件是否均已签名。</summary>
+        private bool VerifyAllSigned(SignatureModel item)
+        {
+            Trace.TraceInformation("校验<" + item.SoftwareName + ">目标目录签名状态...");
+            List<string> unsigned = new List<string>();
+            foreach (string file in FolderTool.GetAllFiles(item.TargetPath))
+            {
+                if (!SignatureTool.SupportSignFile.Contains(file.GetExtension().ToLower()))
+                {
+                    continue;
+                }
+                if (!SignatureTool.GetIsSigned(file))
+                {
+                    unsigned.Add(file);
+                }
+            }
+            if (unsigned.Count == 0)
+            {
+                Trace.TraceInformation("校验<" + item.SoftwareName + ">通过：全部已签名！");
+                return true;
+            }
+            Trace.TraceError($"校验<{item.SoftwareName}>发现{unsigned.Count}个未签名文件：\r\n" + string.Join("\r\n", unsigned));
+            return false;
+        }
+
+        /// <summary>上传文件到 FTP；地址支持 ftp://user:pass@host/path 形式，默认匿名。</summary>
+        private bool UploadToFtp(string filePath, string ftpUrl)
+        {
+            try
+            {
+                Uri uri = new Uri(ftpUrl);
+                FtpWebRequest request = (FtpWebRequest)WebRequest.Create(uri);
+                request.Method = WebRequestMethods.Ftp.UploadFile;
+                request.UseBinary = true;
+                request.UsePassive = true;
+                request.Timeout = 60000;
+                if (!string.IsNullOrEmpty(uri.UserInfo))
+                {
+                    string[] parts = uri.UserInfo.Split(':');
+                    request.Credentials = new NetworkCredential(Uri.UnescapeDataString(parts[0]), parts.Length > 1 ? Uri.UnescapeDataString(parts[1]) : "");
+                }
+                byte[] fileData = File.ReadAllBytes(filePath);
+                using (Stream requestStream = request.GetRequestStream())
+                {
+                    requestStream.Write(fileData, 0, fileData.Length);
+                }
+                using (FtpWebResponse response = (FtpWebResponse)request.GetResponse())
+                {
+                    Trace.TraceInformation($"FTP上传<{Path.GetFileName(filePath)}>到<{ftpUrl}>完成: {response.StatusDescription.Trim()}");
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"FTP上传到<{ftpUrl}>失败: {ex.Message}");
+                return false;
+            }
         }
 
         private bool CopyFile(SignatureModel model)
         {
             bool result = false;
+            if (_isSkip || RunControl.Token.IsCancellationRequested)
+            {
+                return false;
+            }
             if (model.checkNeedBuild())
             {
 
                 var compiler = CompilerTool.Instance.GetCompilerByID(null);
-                SlnBuild.Build(model.BiuldArgument, Path.GetDirectoryName(compiler.vsBuilderPath.Trim('\"')));
+                if (compiler == null || compiler.vsBuilderPath.IsNullOrEmpty())
+                {
+                    Trace.TraceError("<" + model.SoftwareName + ">未配置编译器，无法构建，已跳过拷贝与签名！");
+                    model.StatusText = "未配置编译器";
+                    return false;
+                }
+                bool buildSuccess = SlnBuild.Build(model.BiuldArgument, Path.GetDirectoryName(compiler.vsBuilderPath.Trim('\"')));
+                if (!buildSuccess)
+                {
+                    Trace.TraceError("构建<" + model.SoftwareName + ">失败，已跳过拷贝与签名！");
+                    model.StatusText = "构建失败";
+                    return false;
+                }
                 model.LastBiuldTime = DateTime.Now;
                 if (!string.IsNullOrEmpty(model.ProtecterID) && !string.IsNullOrEmpty(model.ProtectProject))
                 {
                     if (!ProtectProjectFiles(model))
                     {
+                        model.StatusText = "保护失败";
                         return false;
                     }
                 }
@@ -630,9 +1226,13 @@ namespace SignatureTool2.ViewModel
                 }
             }
             FindNeedCopyFile(model);
+            if (model.IsStrictSync)
+            {
+                DeleteStaleFiles(model);
+            }
             if (CopyFileToTarget(model))
             {
-                
+
                 if (SignatureFile(model))
                 {
                     result = true;
@@ -640,26 +1240,37 @@ namespace SignatureTool2.ViewModel
                 }
                 else
                 {
-                    while (!result)
+                    // 自动重试失败的文件（不再弹窗，避免阻塞停止操作）
+                    const int maxRetry = 3;
+                    for (int attempt = 1; attempt <= maxRetry && !result; attempt++)
                     {
-                        Trace.TraceWarning("签名<" + model.SoftwareName + ">出现失败，未能完成签名！");
-                        //retry
-                        var rrl = MessageBox.Show("部分签名没成功，需要重新签名", "注意！", MessageBoxButton.OKCancel);
-                        if (rrl == MessageBoxResult.OK)
-                        {
-                            result = Retry(model);
-                        }
-                        else if(rrl == MessageBoxResult.Cancel)
+                        if (_isSkip || RunControl.Token.IsCancellationRequested)
                         {
                             break;
                         }
-
+                        Trace.TraceWarning($"签名<{model.SoftwareName}>出现失败，自动重试({attempt}/{maxRetry})！");
+                        Thread.Sleep(1000);
+                        result = Retry(model);
+                    }
+                    if (!result && !_isSkip && !RunControl.Token.IsCancellationRequested)
+                    {
+                        Trace.TraceWarning("签名<" + model.SoftwareName + ">重试后仍未完成签名！");
+                        model.StatusText = "签名失败";
                     }
                 }
             }
             else
             {
                 Trace.TraceWarning("拷贝<" + model.SoftwareName + ">出现失败，未能完成签名！");
+                model.StatusText = "拷贝失败";
+            }
+            if (result)
+            {
+                model.StatusText = "签名成功";
+            }
+            else if (_isSkip || RunControl.Token.IsCancellationRequested)
+            {
+                model.StatusText = "已停止";
             }
             return result;
         }
@@ -844,20 +1455,20 @@ namespace SignatureTool2.ViewModel
         private void FindNeedCopyFile(SignatureModel model)
         {
             model.CopyList.Clear();
-            List<string> allFiles = FolderTool.GetAllFiles(model.SourcePath);
+            string sourcePath = model.SourcePath;
+            string targetPath = model.TargetPath;
+            List<string> allFiles = FolderTool.GetAllFiles(sourcePath);
             List<CopyFileModel> list = new List<CopyFileModel>();
             DateTime dateTime = DateTime.Now.Date;
             List<string> supportSignFile = SignatureTool.SupportSignFile;
             foreach (string item in allFiles)
             {
-                if (item.Contains("GemooRecorder.exe"))
-                {
-                    var 搜索 = item.GetExtension().ToLower();
-                }
                 DateTime lastWriteTime = new FileInfo(item).LastWriteTime;
                 if (model.LastSignTime == DateTime.MinValue)
                     model.LastSignTime = DateTime.Now.Date;
-                if (!(lastWriteTime < model.LastSignTime) && supportSignFile.Contains(item.GetExtension().ToLower()))
+                // 严格同步：全量拷贝；增量：只拷贝比上次签名新的文件
+                bool needCopy = model.IsStrictSync || !(lastWriteTime < model.LastSignTime);
+                if (needCopy && supportSignFile.Contains(item.GetExtension().ToLower()))
                 {
                     CopyFileModel copyFileModel = new CopyFileModel();
                     copyFileModel.SourcePath = item;
@@ -877,11 +1488,11 @@ namespace SignatureTool2.ViewModel
                     i--;
                     continue;
                 }
-                string sourcePath = list[i].SourcePath;
+                string filePath = list[i].SourcePath;
                 CopyFileModel copyFileModel2 = new CopyFileModel();
-                copyFileModel2.SourcePath = sourcePath;
-                copyFileModel2.RelativePath = sourcePath.Replace(model.SourcePath + "\\", "");
-                copyFileModel2.TargetPath = model.TargetPath.Combine(copyFileModel2.RelativePath);
+                copyFileModel2.SourcePath = filePath;
+                copyFileModel2.RelativePath = filePath.Replace(sourcePath + "\\", "");
+                copyFileModel2.TargetPath = targetPath.Combine(copyFileModel2.RelativePath);
                 model.CopyList.Add(copyFileModel2);
             }
         }
